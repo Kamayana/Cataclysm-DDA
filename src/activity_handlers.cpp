@@ -762,7 +762,17 @@ static bool butchery_drops_harvest( item *corpse_item, const mtype &mt, Characte
         return false;
     }
 
-    you.add_msg_if_player( m_neutral, mt.harvest->message() );
+    std::vector<snippet_id> ids_used;
+    you.add_msg_if_player( m_neutral, mt.harvest->message( ids_used ) );
+    for( snippet_id id : ids_used ) {
+        // only ever do the effect for a snippet the first time you see it
+        if( !get_avatar().has_seen_snippet( id ) ) {
+
+            //note that you have seen the snippet
+            get_avatar().add_snippet( id );
+        }
+    }
+
     int monster_weight = to_gram( mt.weight );
     monster_weight += std::round( monster_weight * rng_float( -0.1, 0.1 ) );
     if( corpse_item->has_flag( flag_QUARTERED ) ) {

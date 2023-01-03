@@ -80,6 +80,11 @@ std::string harvest_list::message() const
     return SNIPPET.expand( message_.translated() );
 }
 
+std::string harvest_list::message( std::vector<snippet_id> &ids ) const
+{
+    return SNIPPET.expand( message_.translated(), ids );
+}
+
 bool harvest_list::is_null() const
 {
     return id == harvest_id::NULL_ID();

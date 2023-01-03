@@ -75,8 +75,10 @@ class snippet_library
          * for example, "drop <yrwp>, <okay>?" may expand to "drop <yrwp>, okay?"
          * because "<yrwp>" is a special tag that does not have a category defined
          * in the JSON files.
+         * TODO: Mee explain this
          */
         std::string expand( const std::string &str ) const;
+        std::string expand( const std::string &str, std::vector<snippet_id> &ids ) const;
         /**
          * Returns the id of a random snippet out of the given category.
          * Snippets without an id will NOT be returned by this function.
@@ -104,6 +106,7 @@ class snippet_library
          * TODO: make the result stay the same through different game sessions
          */
         cata::optional<translation> random_from_category( const std::string &cat, unsigned int seed ) const;
+        std::pair<cata::optional<translation>, snippet_id> random_from_category_with_id( const std::string &cat, unsigned int seed ) const;
         /**
          * Used only for legacy compatibility. `hash_to_id_migration` will be
          * initialized if it hasn't been yet, and the snippet with the given

@@ -133,6 +133,12 @@ bool snippet_library::has_snippet_with_id( const snippet_id &id ) const
 
 std::string snippet_library::expand( const std::string &str ) const
 {
+    std::vector<snippet_id> dummy;
+    return expand( str, dummy );
+}
+
+std::string snippet_library::expand( const std::string &str, std::vector<snippet_id> &ids ) const
+{
     size_t tag_begin = str.find( '<' );
     if( tag_begin == std::string::npos ) {
         return str;
@@ -143,14 +149,18 @@ std::string snippet_library::expand( const std::string &str ) const
     }
 
     std::string symbol = str.substr( tag_begin, tag_end - tag_begin + 1 );
-    cata::optional<translation> replacement = random_from_category( symbol );
-    if( !replacement.has_value() ) {
+    //cata::optional<translation> replacement = random_from_category( symbol );
+    std::pair<cata::optional<translation>, snippet_id> replacement = random_from_category_with_id( symbol, rng_bits() );
+    if( replacement.second != snippet_id::NULL_ID() ) {
+        ids.emplace_back( replacement.second );
+    }
+    if( !replacement.first.has_value() ) {
         return str.substr( 0, tag_end + 1 )
-               + expand( str.substr( tag_end + 1 ) );
+               + expand( str.substr( tag_end + 1 ), ids );
     }
     return str.substr( 0, tag_begin )
-           + expand( replacement.value().translated() )
-           + expand( str.substr( tag_end + 1 ) );
+           + expand( replacement.first.value().translated(), ids )
+           + expand( str.substr( tag_end + 1 ), ids );
 }
 
 snippet_id snippet_library::random_id_from_category( const std::string &cat ) const
@@ -170,10 +180,16 @@ snippet_id snippet_library::random_id_from_category( const std::string &cat ) co
 
 cata::optional<translation> snippet_library::random_from_category( const std::string &cat ) const
 {
-    return random_from_category( cat, rng_bits() );
+    return random_from_category_with_id( cat, rng_bits() ).first;
 }
 
 cata::optional<translation> snippet_library::random_from_category( const std::string &cat,
+    unsigned int seed ) const
+{
+    return random_from_category_with_id( cat, seed ).first;
+}
+
+/*cata::optional<translation> snippet_library::random_from_category( const std::string &cat,
         unsigned int seed ) const
 {
     const auto it = snippets_by_category.find( cat );
@@ -196,6 +212,33 @@ cata::optional<translation> snippet_library::random_from_category( const std::st
         return get_snippet_by_id( it->second.ids[index] );
     } else {
         return it->second.no_id[index - it->second.ids.size()];
+    }
+}*/
+
+std::pair<cata::optional<translation>, snippet_id> snippet_library::random_from_category_with_id( const std::string &cat,
+                                                                                                  unsigned int seed ) const
+{
+    std::pair<cata::optional<translation>, snippet_id> ret;
+    const auto it = snippets_by_category.find( cat );
+    if( it == snippets_by_category.end() ) {
+        return { cata::nullopt, snippet_id::NULL_ID() };
+    }
+    if( it->second.ids.empty() && it->second.no_id.empty() ) {
+        return { cata::nullopt, snippet_id::NULL_ID() };
+    }
+    const size_t count = it->second.ids.size() + it->second.no_id.size();
+    // uniform_int_distribution always returns zero when the random engine is
+    // cata_default_random_engine aka std::minstd_rand0 and the seed is small,
+    // so std::mt19937 is used instead. This engine is deterministically seeded,
+    // so acceptable.
+    // NOLINTNEXTLINE(cata-determinism)
+    std::mt19937 generator( seed );
+    std::uniform_int_distribution<size_t> dis( 0, count - 1 );
+    const size_t index = dis( generator );
+    if( index < it->second.ids.size() ) {
+        return { get_snippet_by_id( it->second.ids[index] ), it->second.ids[index] };
+    } else {
+        return { it->second.no_id[index - it->second.ids.size()], snippet_id::NULL_ID() };
     }
 }
 

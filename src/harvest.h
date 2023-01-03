@@ -103,6 +103,7 @@ class harvest_list
         std::vector<std::pair<harvest_id, mod_id>> src;
 
         std::string message() const;
+        std::string message( std::vector<snippet_id> &ids_used ) const;
 
         bool is_null() const;
 
