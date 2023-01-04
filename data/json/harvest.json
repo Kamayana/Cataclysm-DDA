@@ -1255,6 +1255,7 @@
   },
   {
     "id": "arachnid_dragonfly_mega",
+    "//": "TODO: Make detailed single messages like this snippetable",
     "type": "harvest",
     "message": "As you hack away at the chitinous amalgamation you can't help but follow the tunnel the (male?) dragonfly's tail bore into the flesh of its mate, ending up at a formless amalgamation of eyes, jaws, eggs, and ganglia deep within.  Love truly knows no bounds.",
     "entries": [
