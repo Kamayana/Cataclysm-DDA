@@ -238,6 +238,8 @@ static const efftype_id effect_weed_high( "weed_high" );
 
 static const flag_id json_flag_HIDDEN_CABLE( "HIDDEN_CABLE" );
 
+static const furn_str_id furn_f_aluminum_stepladder( "f_aluminum_stepladder" );
+static const furn_str_id furn_f_ladder( "f_ladder" );
 static const furn_str_id furn_f_translocator_buoy( "f_translocator_buoy" );
 
 static const harvest_drop_type_id harvest_drop_blood( "blood" );

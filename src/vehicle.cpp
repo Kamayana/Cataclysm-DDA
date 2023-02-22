@@ -98,8 +98,6 @@ static const efftype_id effect_winded( "winded" );
 
 static const fault_id fault_engine_immobiliser( "fault_engine_immobiliser" );
 
-static const flag_id json_flag_HIDDEN_CABLE( "HIDDEN_CABLE" );
-
 static const itype_id fuel_type_animal( "animal" );
 static const itype_id fuel_type_battery( "battery" );
 static const itype_id fuel_type_mana( "mana" );
