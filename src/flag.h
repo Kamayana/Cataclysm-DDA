@@ -89,7 +89,7 @@ extern const flag_id flag_CUSTOM_EXPLOSION;
 extern const flag_id flag_CUT_IMMUNE;
 extern const flag_id flag_DANGEROUS;
 extern const flag_id flag_DEAF;
-extern const flag_id flag_HIDDEN_CABLE;
+extern const flag_id flag_AUTO_CABLE;
 extern const flag_id flag_DIAMOND;
 extern const flag_id flag_DIG_TOOL;
 extern const flag_id flag_DIMENSIONAL_ANCHOR;

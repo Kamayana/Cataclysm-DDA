@@ -79,7 +79,7 @@ const flag_id flag_CUSTOM_EXPLOSION( "CUSTOM_EXPLOSION" );
 const flag_id flag_CUT_IMMUNE( "CUT_IMMUNE" );
 const flag_id flag_DANGEROUS( "DANGEROUS" );
 const flag_id flag_DEAF( "DEAF" );
-const flag_id flag_HIDDEN_CABLE( "HIDDEN_CABLE" );
+const flag_id flag_AUTO_CABLE( "AUTO_CABLE" );
 const flag_id flag_DIAMOND( "DIAMOND" );
 const flag_id flag_DIG_TOOL( "DIG_TOOL" );
 const flag_id flag_DIMENSIONAL_ANCHOR( "DIMENSIONAL_ANCHOR" );
