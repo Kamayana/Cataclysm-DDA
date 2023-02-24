@@ -4,7 +4,7 @@
     "id": "power_cord",
     "name": { "str": "power cord" },
     "description": "A power cord, like you've seen many times before: it's a short multi-stranded copper cord with a power outlet at the end.",
-    "//": "This cable is automatically handled by vehicles/appliances and is used for connecting them to each other.  See vehicle part in appliances > power_cord",
+    "//": "This cable is automatically handled by vehicles/appliances and is used for connecting them to each other.  See vehicle part in furniture_and_terrain > appliances.json",
     "to_hit": 1,
     "color": "dark_gray",
     "symbol": "&",
