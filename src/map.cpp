@@ -7405,6 +7405,7 @@ void map::shift( const point &sp )
     }
 
     const tripoint_abs_sm abs = get_abs_sub();
+    std::vector<tripoint> loaded_grids;
 
     // TODO: fix point types (sp should be relative?)
     set_abs_sub( abs + sp );
@@ -7455,7 +7456,8 @@ void map::shift( const point &sp )
                             }
                             update_vehicle_list( cur_submap, gridz );
                         } else {
-                            loadn( grid, true );
+                            loadn( grid, true, false );
+                            loaded_grids.emplace_back( grid );
                         }
                     }
                 } else { // sy < 0; work through it backwards
@@ -7470,7 +7472,8 @@ void map::shift( const point &sp )
                             }
                             update_vehicle_list( cur_submap, gridz );
                         } else {
-                            loadn( grid, true );
+                            loadn( grid, true, false );
+                            loaded_grids.emplace_back( grid );
                         }
                     }
                 }
@@ -7489,7 +7492,8 @@ void map::shift( const point &sp )
                             }
                             update_vehicle_list( cur_submap, gridz );
                         } else {
-                            loadn( grid, true );
+                            loadn( grid, true, false );
+                            loaded_grids.emplace_back( grid );
                         }
                     }
                 } else { // sy < 0; work through it backwards
@@ -7504,7 +7508,8 @@ void map::shift( const point &sp )
                             }
                             update_vehicle_list( cur_submap, gridz );
                         } else {
-                            loadn( grid, true );
+                            loadn( grid, true, false );
+                            loaded_grids.emplace_back( grid );
                         }
                     }
                 }
@@ -7522,6 +7527,11 @@ void map::shift( const point &sp )
         for( const tripoint &pt : old_cache ) {
             support_cache_dirty.insert( pt + point( -sp.x * SEEX, -sp.y * SEEY ) );
         }
+    }
+    // actualize after loading all submaps to prevent errors
+    // with entities at the edges
+    for( tripoint loaded_grid : loaded_grids ) {
+        actualize( loaded_grid );
     }
 }
 
@@ -7706,11 +7716,6 @@ void map::loadn( const tripoint &grid, const bool update_vehicles, bool _actuali
                 }
             }
         }
-    }
-
-    // don't actualize before all maps are loaded
-    if( _actualize ) {
-        actualize( grid );
     }
 
     abs_sub.z() = old_abs_z;
