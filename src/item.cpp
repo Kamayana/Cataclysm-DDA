@@ -12772,9 +12772,12 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos )
         reset_cable( carrier );
         return false;
     }
+
+    bool carrying_item = carrier->has_item( *this );
     std::string state = get_var( "state" );
+
     if( state == "solar_pack_link" || state == "solar_pack" ) {
-        if( !carrier->has_item( *this ) || !carrier->worn_with_flag( flag_SOLARPACK_ON ) ) {
+        if( !carrying_item || !carrier->worn_with_flag( flag_SOLARPACK_ON ) ) {
             carrier->add_msg_if_player( m_bad, _( "You notice the cable has come loose!" ) );
             reset_cable( carrier );
             return false;
@@ -12786,7 +12789,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos )
     };
 
     if( state == "UPS" ) {
-        if( !carrier->has_item( *this ) || !carrier->has_item_with( used_ups ) ) {
+        if( !carrying_item || !carrier->has_item_with( used_ups ) ) {
             carrier->add_msg_if_player( m_bad, _( "You notice the cable has come loose!" ) );
             for( item *used : carrier->items_with( used_ups ) ) {
                 used->erase_var( "cable" );
@@ -12801,7 +12804,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos )
     }
 
     if( !here.veh_at( *source ) ) {
-        if( carrier->has_item( *this ) ) {
+        if( carrying_item ) {
             carrier->add_msg_if_player( m_bad, _( "You notice the cable has come loose!" ) );
         }
         reset_cable( carrier );
@@ -12813,7 +12816,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos )
     charges = max_charges - distance;
 
     if( charges < 1 ) {
-        if( carrier->has_item( *this ) ) {
+        if( carrying_item ) {
             carrier->add_msg_if_player( m_bad, _( "The over-extended cable breaks loose!" ) );
         }
         reset_cable( carrier );
