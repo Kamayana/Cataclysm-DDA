@@ -3903,6 +3903,7 @@ void insert_item_activity_actor::start( player_activity &act, Character &who )
 void insert_item_activity_actor::finish( player_activity &act, Character &who )
 {
     bool success = false;
+    bool inserted_active = false;
     drop_location &holstered_item = items.front();
     if( holstered_item.first ) {
         item &it = *holstered_item.first;
@@ -3918,6 +3919,9 @@ void insert_item_activity_actor::finish( player_activity &act, Character &who )
                                                           holstered_item.first->display_name(), holster->type->nname( 1 ) ) );
                     handler.add_unsealed( holster );
                     handler.unseal_pocket_containing( holstered_item.first );
+                    if( !inserted_active && holstered_item.first->active ) {
+                        inserted_active = true;
+                    }
                     holstered_item.first.remove_item();
                 }
 
@@ -3941,6 +3945,9 @@ void insert_item_activity_actor::finish( player_activity &act, Character &who )
                                                           copy.display_name(), holster->type->nname( 1 ) ) );
                     handler.add_unsealed( holster );
                     handler.unseal_pocket_containing( holstered_item.first );
+                    if( !inserted_active && holstered_item.first->active ) {
+                        inserted_active = true;
+                    }
                     it.charges -= result;
                     if( it.charges == 0 ) {
                         holstered_item.first.remove_item();
@@ -3962,7 +3969,7 @@ void insert_item_activity_actor::finish( player_activity &act, Character &who )
 
     items.pop_front();
     if( items.empty() || !success || items.front().first == item_location::nowhere ) {
-        if( !holster->active ) {
+        if( inserted_active && holster.where() == item_location::type::map && !holster->active ) {
             get_map().make_active( holster );
         }
         handler.handle_by( who );
