@@ -347,6 +347,7 @@
       "EBOOKREAD",
       "ELECTRICSTORAGE",
       "PORTABLE_GAME",
+      "PLUG_IN",
       {
         "target": "laptop_screen_lit",
         "msg": "You light up the screen.",
@@ -395,6 +396,7 @@
       "EBOOKREAD",
       "ELECTRICSTORAGE",
       "PORTABLE_GAME",
+      "PLUG_IN",
       {
         "ammo_scale": 0,
         "target": "laptop",
