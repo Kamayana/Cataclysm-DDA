@@ -1048,7 +1048,7 @@ public:
 
     ~plug_in_actor() override = default;
     void load( const JsonObject &obj ) override;
-    cata::optional<int> use( Character &p, item &it, bool, const tripoint & ) const override;
+    cata::optional<int> use( Character &p, item &it, bool t, const tripoint & ) const override;
     std::unique_ptr<iuse_actor> clone() const override;
     void info( const item &, std::vector<iteminfo> & ) const override;
     std::string get_name() const override;
