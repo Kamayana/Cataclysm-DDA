@@ -4397,7 +4397,7 @@ std::unique_ptr<iuse_actor> plug_in_actor::clone() const
 
 void plug_in_actor::load( const JsonObject &obj )
 {
-    type = itype_id( obj.get_string( "cable_type", "device_power_cord" ) );
+    type = itype_id( obj.get_string( "cable_type", "generic_device_cable" ) );
     cable_length = obj.get_int( "cable_length", 4 );
     charge_interval = obj.get_int( "charge_interval", 6 );
     efficiency = obj.get_int( "efficiency", 7 );
