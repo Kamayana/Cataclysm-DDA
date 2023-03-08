@@ -4443,13 +4443,14 @@ cata::optional<int> plug_in_actor::use( Character &p, item &it, bool, const trip
 
         cable.set_var( "state", "pay_out_cable" );
         cable.active = true;
-        it.put_in( cable, item_pocket::pocket_type::CABLE );
+        if( it.put_in( cable, item_pocket::pocket_type::CABLE ).success() ) {
         it.process( get_map(), &p, p.pos() );
         p.moves -= 15;
 
         p.add_msg_if_player( _( "You connect the %1$s to the %2$s." ), 
                              it.tname( 1, false ), vp->vehicle().name );
         it.plugged_in = true;
+    }
     }
 
     return 0;
