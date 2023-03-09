@@ -10518,7 +10518,7 @@ int item::ammo_consume( int qty, const tripoint &pos, Character *carrier )
     // Consume power from appliances/vehicles connected with cables
     if( plugged_in ) {
         //qty -= contents.ammo_consume_via_cable( qty, pos );
-        item *cable = contents.cables( true ).front();
+        item *cable = contents.cables( true ).front();//TODOkama don't just use front here
         const cata::optional<tripoint> source = cable->get_cable_target( carrier, pos );
         if( source ) {
             const optional_vpart_position vp = get_map().veh_at( *source );
