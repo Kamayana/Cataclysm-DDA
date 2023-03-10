@@ -4440,7 +4440,8 @@ cata::optional<int> plug_in_actor::use( Character &p, item &it, bool t, const tr
         cable.set_var( "source_y", abspos.y );
         cable.set_var( "source_z", here.get_abs_sub().z() );
 
-        cable.set_var( "cable_length", cable_length );
+        // Add 1 to length so it's the max length it can stretch to, not the length that it breaks.
+        cable.set_var( "cable_length", cable_length + 1);
         cable.set_var( "efficiency", efficiency );
         // Convert wattage to how long it takes to charge 1 kW, the unit batteries use.
         cable.set_var( "charge_interval",
