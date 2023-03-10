@@ -4445,7 +4445,7 @@ cata::optional<int> plug_in_actor::use( Character &p, item &it, bool t, const tr
         cable.set_var( "efficiency", efficiency );
         // Convert wattage to how long it takes to charge 1 kW, the unit batteries use.
         cable.set_var( "charge_interval",
-                       std::max( 1, static_cast<int>( std::floor( 1000 / wattage + 0.5 ) ) ) );
+                       std::max( 1, static_cast<int>( std::floor( 1000.0 / wattage + 0.5 ) ) ) );
 
         cable.set_var( "state", "pay_out_cable" );
         cable.active = true;
