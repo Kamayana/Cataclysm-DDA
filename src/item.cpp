@@ -12891,7 +12891,7 @@ void item::reset_cable( Character *p, item *parent_item )
     charges = get_var( "cable_length", type->maximum_charges() );
 
     if( p != nullptr ) {
-        p->add_msg_if_player( _( "You reel in the cable." ) );
+        p->add_msg_if_player( m_info, _( "You reel in the cable." ) );
         p->moves -= charges * 10;
         active = false;
     } else {
