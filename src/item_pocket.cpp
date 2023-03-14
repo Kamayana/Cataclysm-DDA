@@ -1645,7 +1645,7 @@ std::optional<item> item_pocket::remove_item( const item_location &it )
 void item_pocket::overflow( const tripoint &pos )
 {
     if( is_type( pocket_type::MOD ) || is_type( pocket_type::CORPSE ) ||
-        is_type( pocket_type::EBOOK ) ) {
+        is_type( pocket_type::EBOOK ) || is_type( pocket_type::CABLE ) ) {
         return;
     }
     if( empty() ) {
@@ -1750,7 +1750,8 @@ void item_pocket::on_contents_changed()
 
 bool item_pocket::spill_contents( const tripoint &pos )
 {
-    if( is_type( pocket_type::EBOOK ) || is_type( pocket_type::CORPSE ) ) {
+    if( is_type( pocket_type::EBOOK ) || is_type( pocket_type::CORPSE ) ||
+        is_type( pocket_type::CABLE ) ) {
         return false;
     }
 
