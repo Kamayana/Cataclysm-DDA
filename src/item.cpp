@@ -10337,7 +10337,7 @@ units::energy item::energy_remaining() const
     return 0_J;
 }
 
-int item::ammo_remaining( const Character *carrier ) const
+int item::ammo_remaining( const Character *carrier, bool cable_links ) const
 {
     int ret = 0;
 
@@ -10348,7 +10348,7 @@ int item::ammo_remaining( const Character *carrier ) const
     }
 
     // Cable connections
-    if( plugged_in ) {
+    if( cable_links && plugged_in ) {
         map &here = get_map();
         for( const item *cable : contents.cables( true ) ) {
             const optional_vpart_position vp = here.veh_at( here.getlocal( cable->link.pos ) );
@@ -10495,7 +10495,7 @@ bool item::ammo_sufficient( const Character *carrier, const std::string &method,
         qty *= iter->second;
     }
     if( ammo_required() ) {
-        return ammo_remaining( carrier ) >= ammo_required() * qty;
+        return ammo_remaining( carrier, true ) >= ammo_required() * qty;
 
     } else if( get_gun_ups_drain() > 0_kJ ) {
         return carrier->available_ups() >= get_gun_ups_drain() * qty;
