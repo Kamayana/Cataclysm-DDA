@@ -1460,6 +1460,12 @@ class item : public visitable
             int power_draw = 0;
             /**TODOkama */
             int max_length = 2;
+            /**TODOkama */
+            int charge_rate = 0;
+            /**TODOkama */
+            int charge_interval = -1;
+            /**TODOkama */
+            int charge_efficiency = 7;
         };
         cable_link link;
         /**
