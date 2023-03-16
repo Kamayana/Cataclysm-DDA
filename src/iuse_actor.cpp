@@ -4399,8 +4399,8 @@ void plug_in_actor::load( const JsonObject &jo )
 {
     jo.read( "cable_type", type );
     jo.read( "cable_length", cable_length );
-    jo.read( "efficiency", efficiency );
     jo.read( "charge_rate", charge_rate );
+    jo.read( "efficiency", efficiency );
     jo.read( "menu_text", menu_text );
 }
 
