@@ -4425,7 +4425,7 @@ cata::optional<int> link_up_actor::use( Character &p, item &it, bool t, const tr
     }
 
     if( it.plugged_in ) {
-        if( query_yn( string_format( _( "Unplug the %s?" ), it.tname( 1, false ) ) ) ) {
+        if( query_yn( string_format( _( "Unplug the %s?" ), it.label( 1 ) ) ) ) {
             it.reset_cables( &p );
             return 0;
         }
@@ -4500,7 +4500,7 @@ cata::optional<int> link_up_actor::use( Character &p, item &it, bool t, const tr
             it.process( get_map(), &p, p.pos() );
             p.moves -= 5;
             p.add_msg_if_player( _( "You connect the %1$s to the %2$s." ),
-                                 it.tname( 1, false ), vp->vehicle().name );
+                                 it.label( 1 ), vp->vehicle().name );
         } else {
             debugmsg( "Failed to add the %s inside the %s!", cable.tname(), it.tname() );
             return cata::nullopt;
@@ -4516,7 +4516,7 @@ cata::optional<int> link_up_actor::use( Character &p, item &it, bool t, const tr
         it.process( get_map(), &p, p.pos() );
         p.moves -= 5;
         p.add_msg_if_player( _( "You connect the %1$s to the %2$s." ),
-                             it.tname( 1, false ), vp->vehicle().name );
+                             it.label( 1 ), vp->vehicle().name );
     }
 
     return 0;
