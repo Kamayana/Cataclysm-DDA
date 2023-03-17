@@ -65,23 +65,14 @@
     "color": "light_gray",
     "ammo": [ "battery" ],
     "charges_per_use": 1,
-    "use_action": [
-      {
-        "target": "cell_phone_flashlight",
-        "msg": "You light up the screen.",
-        "active": true,
-        "need_charges": 1,
-        "need_charges_msg": "The cellphone's batteries need more charge.",
-        "type": "transform"
-      },
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 4,
-        "charge_rate": "5 W"
-      }
-    ],
+    "use_action": {
+      "target": "cell_phone_flashlight",
+      "msg": "You light up the screen.",
+      "active": true,
+      "need_charges": 1,
+      "need_charges_msg": "The cellphone's batteries need more charge.",
+      "type": "transform"
+    },
     "flags": [ "WATCH", "ALARMCLOCK", "WATER_BREAK", "ELECTRONIC" ],
     "pocket_data": [
       {
@@ -89,14 +80,6 @@
         "rigid": true,
         "flag_restriction": [ "BATTERY_LIGHT", "BATTERY_ULTRA_LIGHT" ],
         "default_magazine": "light_plus_battery_cell"
-      },
-      { 
-        "pocket_type": "CABLE",
-        "rigid": true,
-        "max_contains_volume": "1 ml",
-        "max_contains_weight": "1 g",
-        "weight_multiplier": 0.0,
-        "flag_restriction": [ "CABLE_SPOOL" ]
       }
     ]
   },
@@ -107,22 +90,13 @@
     "name": { "str": "cellphone - Flashlight", "str_pl": "cellphones - Flashlight" },
     "power_draw": "500 mW",
     "revert_to": "cell_phone",
-    "use_action": [
-      {
-        "ammo_scale": 0,
-        "target": "cell_phone",
-        "msg": "You turn off the screen.",
-        "menu_text": "Turn off",
-        "type": "transform"
-      },
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 4,
-        "charge_rate": "5 W"
-      }
-    ],
+    "use_action": {
+      "ammo_scale": 0,
+      "target": "cell_phone",
+      "msg": "You turn off the screen.",
+      "menu_text": "Turn off",
+      "type": "transform"
+    },
     "flags": [ "WATCH", "LIGHT_8", "CHARGEDIM", "TRADER_AVOID", "WATER_BREAK", "ELECTRONIC" ]
   },
   {
@@ -190,13 +164,6 @@
         "active": true,
         "need_charges": 1,
         "need_charges_msg": "The tablet batteries are dead."
-      },
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 4,
-        "charge_rate": "10 W"
       }
     ],
     "flags": [ "WATCH", "WATER_BREAK", "ELECTRONIC" ],
@@ -213,14 +180,6 @@
         "max_contains_volume": "1 ml",
         "max_contains_weight": "1 g",
         "weight_multiplier": 0.0
-      },
-      { 
-        "pocket_type": "CABLE",
-        "rigid": true,
-        "max_contains_volume": "1 ml",
-        "max_contains_weight": "1 g",
-        "weight_multiplier": 0.0,
-        "flag_restriction": [ "CABLE_SPOOL" ]
       }
     ]
   },
@@ -242,13 +201,6 @@
         "menu_text": "Turn off the screen",
         "msg": "You power down the screen.",
         "target": "eink_tablet_pc"
-      },
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 4,
-        "charge_rate": "10 W"
       }
     ],
     "//": "LIGHT_10 is the bare minimum for reading without penalties",
@@ -480,16 +432,7 @@
     "symbol": ";",
     "color": "dark_gray",
     "ammo": [ "battery" ],
-    "use_action": [ 
-      "MP3",
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 2,
-        "charge_rate": "5 W"
-      } 
-    ],
+    "use_action": [ "MP3" ],
     "charges_per_use": 1,
     "flags": [ "WATER_BREAK_ACTIVE", "ELECTRONIC" ],
     "pocket_data": [
@@ -498,14 +441,6 @@
         "rigid": true,
         "flag_restriction": [ "BATTERY_LIGHT", "BATTERY_ULTRA_LIGHT" ],
         "default_magazine": "light_battery_cell"
-      },
-      { 
-        "pocket_type": "CABLE",
-        "rigid": true,
-        "max_contains_volume": "1 ml",
-        "max_contains_weight": "1 g",
-        "weight_multiplier": 0.0,
-        "flag_restriction": [ "CABLE_SPOOL" ]
       }
     ]
   },
@@ -517,16 +452,7 @@
     "description": "This mp3 player is turned on and playing some great tunes, raising your morale steadily while on your person.  It runs through batteries quickly; you can turn it off by using it.  It also obscures your hearing.",
     "power_draw": "1 W",
     "revert_to": "mp3",
-    "use_action": [
-      "MP3_ON",
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 2,
-        "charge_rate": "5 W"
-      } 
-    ],
+    "use_action": [ "MP3_ON" ],
     "flags": [ "TRADER_AVOID", "WATER_BREAK", "ELECTRONIC" ]
   },
   {
@@ -622,17 +548,7 @@
     "ammo": [ "battery" ],
     "charges_per_use": 1,
     "flags": [ "WATER_BREAK", "ELECTRONIC" ],
-    "use_action": [
-      "PORTABLE_GAME",
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "//": "Based on the Nintendo Switch's power adapter",
-        "cable_length": 3,
-        "charge_rate": "39 W"
-      } 
-    ],
+    "use_action": [ "PORTABLE_GAME" ],
     "pocket_data": [
       {
         "pocket_type": "MAGAZINE_WELL",
@@ -674,14 +590,7 @@
         "need_charges": 5,
         "need_charges_msg": "The smartphone's charge is too low.",
         "type": "transform"
-      },
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 3,
-        "charge_rate": "20 W"
-      } 
+      }
     ],
     "flags": [ "WATCH", "ALARMCLOCK", "USE_UPS", "NO_UNLOAD", "NO_RELOAD", "WATER_BREAK", "CALORIES_INTAKE", "ELECTRONIC" ],
     "pocket_data": [
@@ -692,14 +601,6 @@
         "max_contains_volume": "1 ml",
         "max_contains_weight": "1 g",
         "weight_multiplier": 0.0
-      },
-      { 
-        "pocket_type": "CABLE",
-        "rigid": true,
-        "max_contains_volume": "1 ml",
-        "max_contains_weight": "1 g",
-        "weight_multiplier": 0.0,
-        "flag_restriction": [ "CABLE_SPOOL" ]
       }
     ]
   },
@@ -711,20 +612,7 @@
     "description": "This phone is playing music, steadily raising your morale.  You can't hear anything else while you're listening.",
     "power_draw": "300 mW",
     "revert_to": "smart_phone",
-    "use_action": [
-      "MP3_ON",
-      "PORTABLE_GAME",
-      "EINKTABLETPC",
-      "EBOOKSAVE",
-      "EBOOKREAD",
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 3,
-        "charge_rate": "20 W"
-      } 
-    ],
+    "use_action": [ "MP3_ON", "PORTABLE_GAME", "EINKTABLETPC", "EBOOKSAVE", "EBOOKREAD" ],
     "extend": { "flags": [ "TRADER_AVOID" ] }
   },
   {
@@ -745,14 +633,7 @@
         "msg": "You deactivate the flashlight app.",
         "menu_text": "Turn off flashlight",
         "type": "transform"
-      },
-      { 
-        "type": "link_up",
-        "menu_text": "Plug in / Unplug",
-        "ammo_scale": 0,
-        "cable_length": 3,
-        "charge_rate": "20 W"
-      } 
+      }
     ],
     "extend": { "flags": [ "LIGHT_20", "CHARGEDIM", "TRADER_AVOID" ] }
   },
