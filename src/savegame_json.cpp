@@ -859,7 +859,7 @@ void Character::load( const JsonObject &data )
 
     map &here = get_map();
     // Send cable data to the map immediately.
-    visit_items( [this,&here]( item * e, item * ) {
+    visit_items( [this, &here]( item * e, item * ) {
         if( e->plugged_in ) {
             std::list<item *> links = e->all_items_top( item_pocket::pocket_type::CABLE );
             for( item *link : links ) {
@@ -869,9 +869,9 @@ void Character::load( const JsonObject &data )
                 }
             }
         }
-    if( e->link.vp_index > -1 && e->active ) {
-        const optional_vpart_position vp = here.veh_at( here.getlocal( e->link.pos ) );
-        here.setup_link_processing( &e->link, &vp->vehicle() );
+        if( e->link.vp_index > -1 && e->active ) {
+            const optional_vpart_position vp = here.veh_at( here.getlocal( e->link.pos ) );
+            here.setup_link_processing( &e->link, &vp->vehicle() );
         }
         return VisitResponse::NEXT;
     } );

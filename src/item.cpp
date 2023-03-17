@@ -12791,7 +12791,8 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
     if( carrier != nullptr ) {
         carrying_item = carrier->has_item( parent_item != nullptr ? *parent_item : *this );
 
-        if( link.state == cable_state::solarpack_bionic_link || link.state == cable_state::hanging_from_solarpack ) {
+        if( link.state == cable_state::solarpack_bionic_link ||
+            link.state == cable_state::hanging_from_solarpack ) {
             if( !carrying_item || !carrier->worn_with_flag( flag_SOLARPACK_ON ) ) {
                 carrier->add_msg_if_player( m_bad, _( "You notice the cable has come loose!" ) );
                 reset_cable( carrier, parent_item );
@@ -12817,9 +12818,9 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     if( link.state == cable_state::needs_reeling ) {
         if( carrying_item ) {
-        reset_cable( carrier, parent_item );
-        return has_flag( flag_AUTO_DELETE_CABLE ) ? true : false;
-    }
+            reset_cable( carrier, parent_item );
+            return has_flag( flag_AUTO_DELETE_CABLE ) ? true : false;
+        }
         return false;
     }
 
@@ -12829,13 +12830,13 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
         const optional_vpart_position vp = here.veh_at( connection_pos );
         if( !vp ) {
             if( carrying_item ) {
-            carrier->add_msg_if_player( m_bad, parent_item == nullptr ?
-                                        string_format( _( "You notice your %s has come loose!" ), tname( 1, false ) ) :
-                                        string_format( _( "You notice your %s's cable has come loose!" ), parent_item->tname( 1 ) ) );
+                carrier->add_msg_if_player( m_bad, parent_item == nullptr ?
+                                            string_format( _( "You notice your %s has come loose!" ), tname( 1, false ) ) :
+                                            string_format( _( "You notice your %s's cable has come loose!" ), parent_item->tname( 1 ) ) );
             } else {
-            add_msg_if_player_sees( pos, m_bad, parent_item == nullptr ?
-                                    string_format( _( "You notice the %s has come loose!" ), tname( 1, false ) ) :
-                                    string_format( _( "You notice the %s's cable has come loose!" ), parent_item->tname( 1 ) ) );
+                add_msg_if_player_sees( pos, m_bad, parent_item == nullptr ?
+                                        string_format( _( "You notice the %s has come loose!" ), tname( 1, false ) ) :
+                                        string_format( _( "You notice the %s's cable has come loose!" ), parent_item->tname( 1 ) ) );
             }
             reset_cable( carrier, parent_item );
             return has_flag( flag_AUTO_DELETE_CABLE ) ? true : false;
@@ -12843,20 +12844,20 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
         int distance = rl_dist( pos, connection_pos );
         charges = link.max_length - distance;
-        
+
         if( charges == 0 && carrying_item ) {
             carrier->add_msg_if_player( m_warning, parent_item == nullptr ?
-                string_format( _( "Your %s is stretched to its limit!" ), label( 1 ) ) :
-                string_format( _( "Your %s's cable is stretched to its limit!" ), parent_item->label( 1 ) ) );
+                                        string_format( _( "Your %s is stretched to its limit!" ), label( 1 ) ) :
+                                        string_format( _( "Your %s's cable is stretched to its limit!" ), parent_item->label( 1 ) ) );
         } else if( charges < 0 ) {
             if( carrying_item ) {
                 carrier->add_msg_if_player( m_bad, parent_item == nullptr ?
-                    string_format( _( "Your over-extended %s breaks loose!" ), tname( 1, false ) ) :
-                    string_format( _( "Your %s's over-extended cable breaks loose!" ), parent_item->tname( 1 ) ) );
+                                            string_format( _( "Your over-extended %s breaks loose!" ), tname( 1, false ) ) :
+                                            string_format( _( "Your %s's over-extended cable breaks loose!" ), parent_item->tname( 1 ) ) );
             } else {
                 add_msg_if_player_sees( pos, m_bad, parent_item == nullptr ?
-                    string_format( _( "The over-extended %s breaks loose!" ), tname( 1, false ) ) :
-                    string_format( _( "The %s's over-extended cable breaks loose!" ), parent_item->tname( 1 ) ) );
+                                        string_format( _( "The over-extended %s breaks loose!" ), tname( 1, false ) ) :
+                                        string_format( _( "The %s's over-extended cable breaks loose!" ), parent_item->tname( 1 ) ) );
             }
             reset_cable( carrier, parent_item );
             return has_flag( flag_AUTO_DELETE_CABLE ) ? true : false;
@@ -12884,9 +12885,9 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     if( debug_mode ) {
         add_msg_debug( debugmode::DF_IUSE, "%s linked to %s%s, length %d/%d",
-                   parent_item == nullptr ? tname( 1, false ) : parent_item->tname( 1 ),
-                   link.pos.to_string(), here.inbounds( connection_pos ) ? "" : " (OoB)",
-                   link.max_length - charges, link.max_length );
+                       parent_item == nullptr ? tname( 1, false ) : parent_item->tname( 1 ),
+                       link.pos.to_string(), here.inbounds( connection_pos ) ? "" : " (OoB)",
+                       link.max_length - charges, link.max_length );
     }
 
     return false;
@@ -12898,10 +12899,9 @@ int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh )
 
     if( link.charge_rate == 0 || link.charge_interval < 1 ||
         !calendar::once_every( time_duration::from_turns( link.charge_interval ) ) ) {
-
         return 0;
     }
-    
+
     const item *parent_mag = linked_item.magazine_current();
     if( !parent_mag ) {
         return 0;
@@ -12967,9 +12967,9 @@ void item::reset_cables( Character *p )
     std::vector<item *> cables = contents.cables( true );
     for( item *cable : cables ) {
         cable->reset_cable( p );
-		if( cable->has_flag( flag_AUTO_DELETE_CABLE ) ) {
-			remove_item( *cable );
-		}
+        if( cable->has_flag( flag_AUTO_DELETE_CABLE ) ) {
+            remove_item( *cable );
+        }
     }
     plugged_in = false;
 }
@@ -12982,8 +12982,9 @@ bool item::process_UPS( Character *carrier, const tripoint & /*pos*/ )
         return false;
     }
     bool has_connected_cable = carrier->has_item_with( []( const item & it ) {
-        return it.active && it.has_flag( flag_CABLE_SPOOL ) && ( it.link.state == cable_state::UPS_bionic_link ||
-                it.link.state == cable_state::hanging_from_UPS );
+        return it.active && it.has_flag( flag_CABLE_SPOOL ) &&
+               ( it.link.state == cable_state::UPS_bionic_link ||
+                 it.link.state == cable_state::hanging_from_UPS );
     } );
     if( !has_connected_cable ) {
         erase_var( "cable" );
