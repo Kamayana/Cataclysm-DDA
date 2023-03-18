@@ -5440,8 +5440,7 @@ void map::process_items_in_vehicle( vehicle &cur_veh, submap &current_submap )
 
 void map::setup_link_processing( item::cable_link *link, const vehicle *veh )
 {
-    std::pair<const vehicle *, item::cable_link *> l( veh, link );
-    links_to_process.insert( l );
+    links_to_process.emplace( veh, link );
 }
 
 void map::process_linked_movement()
