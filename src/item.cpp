@@ -10491,22 +10491,6 @@ bool item::ammo_sufficient( const Character *carrier, const std::string &method,
     return true;
 }
 
-bool item::ammo_sufficient( const Character *carrier, const std::string &method,
-                            tripoint pos, int qty ) const
-{
-    auto iter = type->ammo_scale.find( method );
-    if( iter != type->ammo_scale.end() ) {
-        qty *= iter->second;
-    }
-    if( ammo_required() ) {
-        return ammo_remaining( carrier, true ) >= ammo_required() * qty;
-
-    } else if( get_gun_ups_drain() > 0_kJ ) {
-        return carrier->available_ups() >= get_gun_ups_drain() * qty;
-    }
-    return true;
-}
-
 int item::ammo_consume( int qty, const tripoint &pos, Character *carrier )
 {
     if( qty < 0 ) {
@@ -12836,7 +12820,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     // Lambda function for checking if a cable's been stretched too long, resetting it if so.
     // @return True if the cable is disconnected.
-    const auto is_cable_too_long = [this, carrier, pos, parent_item, &here, last_t_abs_pos_is_oob]() {
+    const auto is_cable_too_long = [this, carrier, pos, parent_item, last_t_abs_pos_is_oob]() {
         if( debug_mode ) {
             add_msg_debug( debugmode::DF_IUSE, "%s linked to %s%s, length %d/%d",
                            parent_item != nullptr ? parent_item->label( 1 ) : label( 1 ),
@@ -12932,7 +12916,8 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     // If either the link's connected sides moved, check cable's length.
     if( check_length ) {
-        charges = link->max_length - rl_dist( pos, t_veh_bub_pos + t_veh->part( link_vp_index ).precalc[0] );
+        charges = link->max_length - rl_dist( pos,
+                                              t_veh_bub_pos + t_veh->part( link_vp_index ).precalc[0] );
         if( is_cable_too_long() ) {
             return reset_cable( carrier, parent_item );
         }
@@ -12965,7 +12950,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
     return false;
 }
 
-const int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh, int turns_elapsed )
+int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh, int turns_elapsed )
 {
     if( !link || link->charge_rate == 0 || turns_elapsed < 1 || link->charge_interval < 1 ) {
         return 0;
@@ -13020,8 +13005,8 @@ const int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh,
     return 0;
 }
 
-const bool item::reset_cable( Character *p, item *parent_item, const bool loose_message,
-                              const tripoint sees_point )
+bool item::reset_cable( Character *p, item *parent_item, const bool loose_message,
+                        const tripoint sees_point )
 {
     charges = get_var( "cable_length", type->maximum_charges() );
 
