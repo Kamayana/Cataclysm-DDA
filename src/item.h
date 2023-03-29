@@ -1481,7 +1481,7 @@ class item : public visitable
          * @return True if the cable should be deleted.
          */
         bool reset_cable( Character *p = nullptr, item *parent_item = nullptr,
-                                const bool loose_message = false, const tripoint sees_point = tripoint_zero );
+                          const bool loose_message = false, const tripoint sees_point = tripoint_zero );
         void reset_cables( Character *p );
 
         /**
@@ -2360,8 +2360,6 @@ class item : public visitable
          */
         bool ammo_sufficient( const Character *carrier, int qty = 1 ) const;
         bool ammo_sufficient( const Character *carrier, const std::string &method, int qty = 1 ) const;
-        bool ammo_sufficient( const Character *carrier, const std::string &method,
-                              tripoint pos, int qty = 1 ) const;
 
         /**
          * Consume ammo (if available) and return the amount of ammo that was consumed

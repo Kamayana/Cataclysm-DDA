@@ -10491,22 +10491,6 @@ bool item::ammo_sufficient( const Character *carrier, const std::string &method,
     return true;
 }
 
-bool item::ammo_sufficient( const Character *carrier, const std::string &method,
-                            tripoint pos, int qty ) const
-{
-    auto iter = type->ammo_scale.find( method );
-    if( iter != type->ammo_scale.end() ) {
-        qty *= iter->second;
-    }
-    if( ammo_required() ) {
-        return ammo_remaining( carrier, true ) >= ammo_required() * qty;
-
-    } else if( get_gun_ups_drain() > 0_kJ ) {
-        return carrier->available_ups() >= get_gun_ups_drain() * qty;
-    }
-    return true;
-}
-
 int item::ammo_consume( int qty, const tripoint &pos, Character *carrier )
 {
     if( qty < 0 ) {
@@ -12836,7 +12820,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     // Lambda function for checking if a cable's been stretched too long, resetting it if so.
     // @return True if the cable is disconnected.
-    const auto is_cable_too_long = [this, carrier, pos, parent_item, &here, last_t_abs_pos_is_oob]() {
+    const auto is_cable_too_long = [this, carrier, pos, parent_item, last_t_abs_pos_is_oob]() {
         if( debug_mode ) {
             add_msg_debug( debugmode::DF_IUSE, "%s linked to %s%s, length %d/%d",
                            parent_item != nullptr ? parent_item->label( 1 ) : label( 1 ),
@@ -13022,7 +13006,7 @@ int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh, int t
 }
 
 bool item::reset_cable( Character *p, item *parent_item, const bool loose_message,
-                              const tripoint sees_point )
+                        const tripoint sees_point )
 {
     charges = get_var( "cable_length", type->maximum_charges() );
 
