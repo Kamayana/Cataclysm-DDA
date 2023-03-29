@@ -12966,7 +12966,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
     return false;
 }
 
-const int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh, int turns_elapsed )
+int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh, int turns_elapsed )
 {
     if( !link || link->charge_rate == 0 || turns_elapsed < 1 || link->charge_interval < 1 ) {
         return 0;
@@ -13021,7 +13021,7 @@ const int item::charge_linked_batteries( item &linked_item, vehicle &linked_veh,
     return 0;
 }
 
-const bool item::reset_cable( Character *p, item *parent_item, const bool loose_message,
+bool item::reset_cable( Character *p, item *parent_item, const bool loose_message,
                               const tripoint sees_point )
 {
     charges = get_var( "cable_length", type->maximum_charges() );

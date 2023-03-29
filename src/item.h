@@ -1480,7 +1480,7 @@ class item : public visitable
          * Helper to bring a cable back to its initial state.
          * @return True if the cable should be deleted.
          */
-        const bool reset_cable( Character *p = nullptr, item *parent_item = nullptr,
+        bool reset_cable( Character *p = nullptr, item *parent_item = nullptr,
                                 const bool loose_message = false, const tripoint sees_point = tripoint_zero );
         void reset_cables( Character *p );
 
@@ -1494,7 +1494,7 @@ class item : public visitable
         * @param turns_elapsed The number of turns the link has spent outside the reality bubble. Default 1.
         * @return The amount of power given or taken to be displayed; ignores turns_elapsed and inefficiency.
         */
-        const int charge_linked_batteries( item &linked_item, vehicle &linked_veh, int turns_elapsed = 1 );
+        int charge_linked_batteries( item &linked_item, vehicle &linked_veh, int turns_elapsed = 1 );
 
         /**
          * Whether the item should be processed (by calling @ref process).
