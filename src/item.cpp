@@ -12932,7 +12932,8 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     // If either the link's connected sides moved, check cable's length.
     if( check_length ) {
-        charges = link->max_length - rl_dist( pos, t_veh_bub_pos + t_veh->part( link_vp_index ).precalc[0] );
+        charges = link->max_length - rl_dist( pos,
+                                              t_veh_bub_pos + t_veh->part( link_vp_index ).precalc[0] );
         if( is_cable_too_long() ) {
             return reset_cable( carrier, parent_item );
         }
