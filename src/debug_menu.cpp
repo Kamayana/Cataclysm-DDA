@@ -954,7 +954,8 @@ static void change_spells( Character &character )
     ctxt.register_action( "UNLEARN_SPELL" ); // Quickly unlearn a spell
     ctxt.register_action( "TOGGLE_ALL_SPELL" ); // Cycle level on all spells in spells_relative
     ctxt.register_action( "SHOW_ONLY_LEARNED" ); // Removes all unlearned spells in spells_relative
-    ctxt.register_cardinal(); // left and right change spell level
+    ctxt.register_navigate_ui_list();
+    ctxt.register_leftright(); // left and right change spell level
     ctxt.register_action( "QUIT" );
     ctxt.register_action( "CONFIRM" ); // set a spell to a level
     ctxt.register_action( "FILTER" );
@@ -1019,8 +1020,8 @@ static void change_spells( Character &character )
 
             mvwprintz( w_name.window, point( 2, line_number ),
                        spell_color, splt.name.translated() );
-            mvwprintz( w_level.window, point( 2, line_number++ ), spell_color,
-                       _( "%1$-3d/%2$3d" ), spell_level, static_cast<int>( splt.max_level.evaluate( d ) ) );
+            mvwprintz( w_level.window, point( 1, line_number++ ), spell_color,
+                       _( "%1$3d /%2$3d" ), spell_level, static_cast<int>( splt.max_level.evaluate( d ) ) );
         }
 
         nc_color gray = c_light_gray;
@@ -1142,19 +1143,7 @@ static void change_spells( Character &character )
             filterstring.clear();
             filter_spells();
 
-        } else if( action == "UP" ) {
-            if( !spell_selected ) {
-                spell_selected = spells_relative.size() - 1;
-            } else {
-                spell_selected--;
-            }
-
-        } else if( action == "DOWN" ) {
-            spell_selected++;
-            if( static_cast<size_t>( spell_selected ) == spells_relative.size() ) {
-                spell_selected = 0;
-            }
-
+        } else if( navigate_ui_list( action, spell_selected, 10, spells_relative.size(), true ) ) {
         } else if( action == "LEFT" ) {
             int &spell_level = std::get<1>( *spells_relative[spell_selected] );
             spell_level = std::max( -1, spell_level - 1 );
@@ -2583,24 +2572,24 @@ static void debug_menu_force_temperature()
     } else {
         string_input_popup pop;
 
-        auto ask = [&pop]( const std::string & unit, std::optional<int> current ) {
+        auto ask = [&pop]( const std::string & unit, std::optional<float> current ) {
             int ret = pop.title( string_format( _( "Set temperature to?  [%s]" ), unit ) )
                       .width( 20 )
                       .text( current ? std::to_string( *current ) : "" )
                       .only_digits( true )
                       .query_int();
 
-            return pop.canceled() ? current : std::optional<int>( ret );
+            return pop.canceled() ? current : std::optional<float>( static_cast<float>( ret ) );
         };
 
-        std::optional<int> current;
+        std::optional<float> current;
         std::string option = get_option<std::string>( "USE_CELSIUS" );
 
         if( option == "celsius" ) {
             if( forced_temp ) {
                 current = units::to_celsius( *forced_temp );
             }
-            std::optional<int> ret = ask( "C", current );
+            std::optional<float> ret = ask( "C", current );
             if( ret ) {
                 forced_temp = units::from_celsius( *ret );
             }
@@ -2608,7 +2597,7 @@ static void debug_menu_force_temperature()
             if( forced_temp ) {
                 current = units::to_kelvin( *forced_temp );
             }
-            std::optional<int> ret = ask( "K", current );
+            std::optional<float> ret = ask( "K", current );
             if( ret ) {
                 forced_temp = units::from_kelvin( *ret );
             }
@@ -2616,7 +2605,7 @@ static void debug_menu_force_temperature()
             if( forced_temp ) {
                 current = units::to_fahrenheit( *forced_temp );
             }
-            std::optional<int> ret = ask( "F", current );
+            std::optional<float> ret = ask( "F", current );
             if( ret ) {
                 forced_temp = units::from_fahrenheit( *ret );
             }
