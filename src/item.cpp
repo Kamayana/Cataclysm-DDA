@@ -10311,7 +10311,7 @@ int item::ammo_remaining( const Character *carrier, bool cable_links ) const
             }
         }
     }
-    
+
     std::set<ammotype> ammo = ammo_types();
     // Non ammo using item that uses charges
     if( ammo.empty() ) {
