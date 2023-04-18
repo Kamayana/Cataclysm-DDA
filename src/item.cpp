@@ -12957,7 +12957,6 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
                 break;
             }
         }
-    }
     } else if( link->t_state == link_state::vehicle_tow || link->s_state == link_state::vehicle_tow ) {
         link_vp_index = t_veh->part_at( t_veh->coord_translate( link->t_mount ) );
     }
