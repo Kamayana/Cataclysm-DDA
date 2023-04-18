@@ -814,7 +814,7 @@
     "starting_trait": true,
     "valid": false,
     "cancels": [ "SLOWLEARNER" ],
-    "enchantments": [ { "condition": "ALWAYS", "values": [ { "value": "LEARNING_FOCUS", "add": 15 } ] } ]
+    "enchantments": [ { "condition": "ALWAYS", "values": [ { "value": "LEARNING_FOCUS", "multiply": 0.15 } ] } ]
   },
   {
     "type": "mutation",
@@ -1477,7 +1477,7 @@
     "starting_trait": true,
     "valid": false,
     "cancels": [ "FASTLEARNER" ],
-    "enchantments": [ { "condition": "ALWAYS", "values": [ { "value": "LEARNING_FOCUS", "add": -15 } ] } ]
+    "enchantments": [ { "condition": "ALWAYS", "values": [ { "value": "LEARNING_FOCUS", "multiply": -0.15 } ] } ]
   },
   {
     "type": "mutation",
@@ -4380,9 +4380,9 @@
     "type": "effect_on_condition",
     "id": "PAINREC1_EOC",
     "recurrence": "1 m",
-    "condition": { "and": [ { "compare_int": [ { "u_val": "pain" }, ">", { "const": 0 } ] }, { "u_has_trait": "PAINREC1" } ] },
+    "condition": { "and": [ { "math": [ "u_pain()", ">", "0" ] }, { "u_has_trait": "PAINREC1" } ] },
     "deactivate_condition": { "not": { "u_has_trait": "PAINREC1" } },
-    "effect": [ { "arithmetic": [ { "u_val": "pain" }, "-=", { "const": 3 } ] } ]
+    "effect": [ { "math": [ "u_pain()", "-=", "3" ] } ]
   },
   {
     "type": "mutation",
@@ -4399,9 +4399,9 @@
     "type": "effect_on_condition",
     "id": "PAINREC2_EOC",
     "recurrence": "1 m",
-    "condition": { "and": [ { "compare_int": [ { "u_val": "pain" }, ">", { "const": 0 } ] }, { "u_has_trait": "PAINREC2" } ] },
+    "condition": { "and": [ { "math": [ "u_pain()", ">", "0" ] }, { "u_has_trait": "PAINREC2" } ] },
     "deactivate_condition": { "not": { "u_has_trait": "PAINREC2" } },
-    "effect": [ { "arithmetic": [ { "u_val": "pain" }, "-=", { "const": 4 } ] } ]
+    "effect": [ { "math": [ "u_pain()", "-=", "4" ] } ]
   },
   {
     "type": "mutation",
@@ -4417,9 +4417,9 @@
     "type": "effect_on_condition",
     "id": "PAINREC3_EOC",
     "recurrence": "1 m",
-    "condition": { "and": [ { "compare_int": [ { "u_val": "pain" }, ">", { "const": 0 } ] }, { "u_has_trait": "PAINREC3" } ] },
+    "condition": { "and": [ { "math": [ "u_pain()", ">", "0" ] }, { "u_has_trait": "PAINREC3" } ] },
     "deactivate_condition": { "not": { "u_has_trait": "PAINREC3" } },
-    "effect": [ { "arithmetic": [ { "u_val": "pain" }, "-=", { "const": 5 } ] } ]
+    "effect": [ { "math": [ "u_pain()", "-=", "5" ] } ]
   },
   {
     "type": "mutation",
@@ -4464,7 +4464,8 @@
     "prereqs2": [ "PAINREC3" ],
     "threshreq": [ "THRESH_MEDICAL" ],
     "//": "MASOCHIST_MED, CENOBITE, and NOPAIN don't cancel each other.  By design.  Poor painless people...",
-    "category": [ "MEDICAL" ]
+    "category": [ "MEDICAL" ],
+    "flags": [ "PAIN_IMMUNE" ]
   },
   {
     "type": "mutation",
@@ -6407,6 +6408,17 @@
   },
   {
     "type": "mutation",
+    "id": "MAKAYLA_MUTATOR",
+    "name": { "str": "Catastrophic mutation" },
+    "points": -2,
+    "mixed_effect": true,
+    "description": "Exposure to portal storms and related phenomena causes you to mutate in a mostly predictable fashion.",
+    "purifiable": false,
+    "valid": false,
+    "cancels": [ "CHAOTIC", "UNSTABLE" ]
+  },
+  {
+    "type": "mutation",
     "id": "CHAOTIC",
     "name": { "str": "Genetic Chaos" },
     "points": -4,
@@ -7952,7 +7964,7 @@
     "points": 99,
     "valid": false,
     "description": "If you need to survive the deadliest bug attacks.",
-    "relic_data": { "passive_effects": [ { "values": [ { "value": "MAX_HP", "add": 9000 } ] } ] },
+    "enchantments": [ { "values": [ { "value": "MAX_HP", "add": 9000 } ] } ],
     "debug": true
   },
   {
@@ -7962,7 +7974,7 @@
     "points": 99,
     "valid": false,
     "description": "Heal yourself from this stupid bug attacks.",
-    "relic_data": { "passive_effects": [ { "values": [ { "value": "REGEN_HP", "multiply": 100 } ] } ] },
+    "enchantments": [ { "values": [ { "value": "REGEN_HP", "add": 100 } ] } ],
     "debug": true
   },
   {
@@ -8035,6 +8047,16 @@
     "points": 99,
     "valid": false,
     "description": "Crafting failures won't bug you any more.",
+    "debug": true
+  },
+  {
+    "type": "mutation",
+    "id": "DEBUG_CS",
+    "name": { "str": "Debug Crafting Speed" },
+    "points": 99,
+    "valid": false,
+    "description": "Craft the bug out 50 times faster.",
+    "crafting_speed_multiplier": 50,
     "debug": true
   },
   {

@@ -8,9 +8,6 @@ accessorizing
 acclimatization
 accoustrement
 accuracies
-accurize
-accurized
-accurizing 
 achelousaurus
 acho
 acidball
@@ -51,6 +48,8 @@ airhorn
 airjack
 airsoft
 airworthy
+aketon
+aketons
 alamosaurus
 alate
 alates
@@ -77,6 +76,7 @@ allotrope
 allucination
 alnico
 alquerque
+alinagerimi
 altamente
 alternators
 alumentum
@@ -142,6 +142,7 @@ aquilops
 aramid
 arapaima
 arborescent
+arebinya
 args
 armeniaca
 armet
@@ -266,6 +267,7 @@ bifocal
 biggun
 bigpack
 bileworm
+bilonyali
 bimetal
 binocs
 bioactive
@@ -677,6 +679,7 @@ deceptived
 dedicational
 defatted
 deforming
+dehina
 dehydrator
 dehydrators
 deines
@@ -870,6 +873,7 @@ enervating
 enfranchisement
 enjoyability
 entropic
+envenom
 envenomations
 envenomed
 eocs
@@ -1021,6 +1025,7 @@ flechettes
 fleshier
 fletched
 fletching
+flexibility
 flightworthy
 flim
 flintknapping
@@ -1340,6 +1345,7 @@ hypervitaminosis
 hypno
 hypochlorite
 hypogaea
+ibalalehu
 ichor
 ichthys
 idkont
@@ -1375,6 +1381,7 @@ infirma
 influencers
 inhalant
 inhalative
+inidatseda
 injest
 inlays
 innawood
@@ -1418,6 +1425,7 @@ issi
 issuer
 itchiness
 itemname
+iwedalehu
 j
 jabberwock
 jabberwocks
@@ -1435,6 +1443,7 @@ jointer
 jointing
 jort
 jorts
+jpg
 jtest
 junglefowl
 junipers
@@ -1501,6 +1510,7 @@ kops
 kord
 kosmoceratops
 krabgek
+krar
 kreck
 krick
 kriegsmesser
@@ -1686,6 +1696,7 @@ mesenterium
 meshwork
 messily
 messin
+metahi
 metallics
 metalloid
 metalsmithing
@@ -1718,6 +1729,7 @@ midden
 mideast
 mideastern
 midgame
+midground 
 midrange
 midsentence
 migo
@@ -1757,6 +1769,7 @@ modernday
 modifier
 modifiers
 modularity
+modulations
 mohawks
 moisturized
 moldspring
@@ -1812,6 +1825,7 @@ mutagenicity
 mutagens
 mutatur
 mutus
+muzika
 muzzleloaders
 mycoid
 mycus
@@ -1855,6 +1869,7 @@ necrowolf
 nectivore
 needin
 needlelike
+negeri
 neonate
 neotenic
 neotheropod
@@ -2459,8 +2474,8 @@ scutcher
 scutellosaurus
 scuttles
 sealab
-sealabs
 sealable
+sealabs
 seater
 secretively
 secubot
@@ -2725,6 +2740,7 @@ superpositional
 supersoldier
 supersoldiers
 suppurated
+surcoat
 survivalcraft
 survivalists
 susurrate
@@ -2771,6 +2787,7 @@ technomancer
 technomancy
 techo
 tegmental
+tegwazhi
 teil
 telepad
 telepads
@@ -2787,6 +2804,7 @@ tetrahedron
 th
 thawb
 themm
+therizinosaurus
 thermochemistry
 thermoplastics
 theropod
@@ -2806,6 +2824,7 @@ thumbholes
 thumbless
 thunderball
 thyreophoran
+tifeligalehi
 tileset
 tillable
 tillage
@@ -3155,6 +3174,7 @@ yarker
 yarkin
 yateveo
 yd
+yelemi
 yellowjacket
 yme
 ynn
@@ -3200,5 +3220,5 @@ zuul
 zweitimber
 zygomaticus
 zzz
-zzzzchzzzzchurzzzpileus
 zzzzchzzzzchurzzz
+zzzzchzzzzchurzzzpileus

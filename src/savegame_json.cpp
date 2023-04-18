@@ -2685,7 +2685,6 @@ void monster::load( const JsonObject &data )
     data.read( "morale", morale );
     data.read( "hallucination", hallucination );
     data.read( "fish_population", fish_population );
-    data.read( "lifespan_end", lifespan_end );
     //for older saves convert summon time limit to lifespan end
     std::optional<time_duration> summon_time_limit;
     data.read( "summon_time_limit", summon_time_limit );
@@ -2790,8 +2789,6 @@ void monster::store( JsonOut &json ) const
     json.member( "biosignatures", biosignatures );
     json.member( "biosig_timer", biosig_timer );
     json.member( "udder_timer", udder_timer );
-
-    json.member( "lifespan_end", lifespan_end );
 
     if( horde_attraction > MHA_NULL && horde_attraction < NUM_MONSTER_HORDE_ATTRACTION ) {
         json.member( "horde_attraction", horde_attraction );
@@ -3053,13 +3050,6 @@ void item::io( Archive &archive )
 
     load_legacy_craft_data( archive, craft_data_ );
 
-    double float_damage = 0;
-    if( archive.read( "damage", float_damage ) ) {
-        damage_ = std::min( std::max( min_damage(),
-                                      static_cast<int>( float_damage * itype::damage_scale ) ),
-                            max_damage() );
-    }
-
     int note = 0;
     const bool note_read = archive.read( "note", note );
 
@@ -3272,7 +3262,14 @@ void item::deserialize( const JsonObject &data )
     }
 
     update_inherited_flags();
-    on_damage_changed();
+
+    // 2023-03-26 remove in 0.H, remnants of reinforcing
+    damage_ = std::clamp( damage_, 0, max_damage() );
+    degradation_ = std::clamp( degradation_, 0, max_damage() );
+
+    // 2023-03-26 remove in 0.H, accurizing is obsolete
+    faults.erase( STATIC( fault_id( "fault_gun_unaccurized" ) ) );
+    faults.erase( STATIC( fault_id( "fault_gun_damaged" ) ) );
 }
 
 void item::serialize( JsonOut &json ) const
@@ -3300,7 +3297,12 @@ void vehicle_part::deserialize( const JsonObject &data )
     vpart_id pid;
     data.read( "id", pid );
 
-    pid = vpart_migration::migrate( pid );
+    const vpart_migration *migration = vpart_migration::find_migration( pid );
+    if( migration != nullptr ) {
+        DebugLog( D_WARNING, D_MAIN ) << "vehicle_part::deserialize migrating '" << pid.str()
+                                      << "' to '" << migration->part_id_new.str() << "'";
+        pid = migration->part_id_new;
+    }
 
     std::tie( pid, variant ) = get_vpart_id_variant( pid );
 
@@ -3313,11 +3315,11 @@ void vehicle_part::deserialize( const JsonObject &data )
         data.read( "variant", variant );
     }
 
-    if( data.has_object( "base" ) ) {
-        data.read( "base", base );
+    if( migration != nullptr ) { // migration overrides the base item
+        data.get_member( "base" ); // mark member as visited
+        base = item( migration->part_id_new->base_item, calendar::turn );
     } else {
-        // handle legacy format which didn't include the base item
-        base = item( id.obj().base_item );
+        data.read( "base", base );
     }
 
     data.read( "mount_dx", mount.x );
@@ -3349,6 +3351,7 @@ void vehicle_part::deserialize( const JsonObject &data )
 
     data.read( "crew_id", crew_id );
     data.read( "items", items );
+    data.read( "tools", tools );
     data.read( "target_first_x", target.first.x );
     data.read( "target_first_y", target.first.y );
     data.read( "target_first_z", target.first.z );
@@ -3357,19 +3360,10 @@ void vehicle_part::deserialize( const JsonObject &data )
     data.read( "target_second_z", target.second.z );
     data.read( "ammo_pref", ammo_pref );
 
-    if( data.has_int( "hp" ) && id.obj().durability > 0 ) {
-        // migrate legacy savegames exploiting that all base items at that time had max_damage() of 4
-        base.set_damage( 4 * itype::damage_scale - 4 * itype::damage_scale * data.get_int( "hp" ) /
-                         id.obj().durability );
-    }
-
-    // legacy turrets loaded ammo via a pseudo CARGO space
-    if( is_turret() && !items.empty() ) {
-        const int qty = std::accumulate( items.begin(), items.end(), 0, []( int lhs, const item & rhs ) {
-            return lhs + rhs.charges;
-        } );
-        ammo_set( items.begin()->ammo_current(), qty );
-        items.clear();
+    if( migration != nullptr ) {
+        for( const itype_id &it : migration->add_veh_tools ) {
+            tools.emplace_back( item( it, calendar::turn ) );
+        }
     }
 }
 
@@ -3404,6 +3398,7 @@ void vehicle_part::serialize( JsonOut &json ) const
         json.member( "z_offset", precalc[0].z );
     }
     json.member( "items", items );
+    json.member( "tools", tools );
     if( target.first != tripoint_min ) {
         json.member( "target_first_x", target.first.x );
         json.member( "target_first_y", target.first.y );
@@ -3946,7 +3941,7 @@ void Creature::store( JsonOut &jsout ) const
     jsout.member( "last_updated", last_updated );
 
     jsout.member( "body", body );
-
+    jsout.member( "lifespan_end", lifespan_end );
     // fake is not stored, it's temporary anyway, only used to fire with a gun.
 }
 
@@ -4027,7 +4022,7 @@ void Creature::load( const JsonObject &jsin )
     jsin.read( "body", body );
 
     fake = false; // see Creature::load
-
+    jsin.read( "lifespan_end", lifespan_end );
     on_stat_change( "pain", pain );
 }
 
