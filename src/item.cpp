@@ -13081,7 +13081,6 @@ bool item::reset_cable( Character *p, item *parent_item, const bool loose_messag
 
 void item::reset_cables( Character *p )
 {
-    if( !plugged_in ) {
     if( !contents_linked ) {
         debugmsg( "Tried to reset %s's cables but it wasn't plugged in.", tname() );
         return;
