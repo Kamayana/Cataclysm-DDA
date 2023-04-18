@@ -12813,7 +12813,7 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
     if( link->s_state == link_state::solarpack ) {
         if( carrier == nullptr || !carrier->worn_with_flag( flag_SOLARPACK_ON ) ) {
             add_msg_if_player_sees( pos, m_bad, parent_item == nullptr ?
-                string_format( _( "The %s has come loose from the solar pack." ), label( 1 ) ) :
+                                    string_format( _( "The %s has come loose from the solar pack." ), label( 1 ) ) :
                                     string_format( _( "The %s's cable has come loose from the solar pack." ),
                                                    parent_item->label( 1 ) ) );
             reset_cable( carrier, parent_item );
@@ -12826,8 +12826,8 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
     if( link->s_state == link_state::ups ) {
         if( carrier == nullptr || !carrier->has_item_with( used_ups ) ) {
             add_msg_if_player_sees( pos, m_bad, parent_item == nullptr ?
-                string_format( _( "The %s has come loose from the UPS." ), label( 1 ) ) :
-                string_format( _( "The %s's cable has come loose from the UPS." ), parent_item->label( 1 ) ) );
+                                    string_format( _( "The %s has come loose from the UPS." ), label( 1 ) ) :
+                                    string_format( _( "The %s's cable has come loose from the UPS." ), parent_item->label( 1 ) ) );
             reset_cable( carrier, parent_item );
             return false;
         }
@@ -12921,10 +12921,11 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
     // Find the vp_part index the cable is linked to.
     int link_vp_index = -1;
     if( link->t_state == link_state::vehicle ) {
-    for( int idx : t_veh->cable_ports ) {
-        if( t_veh->part( idx ).mount == link->t_mount ) {
-            link_vp_index = idx;
-            break;
+        for( int idx : t_veh->cable_ports ) {
+            if( t_veh->part( idx ).mount == link->t_mount ) {
+                link_vp_index = idx;
+                break;
+            }
         }
     }
     } else if( link->t_state == link_state::vehicle_tow || link->s_state == link_state::vehicle_tow ) {
@@ -12954,8 +12955,8 @@ bool item::process_cable( map &here, Character *carrier, const tripoint &pos, it
 
     // Extra behaviors for the cabled item.
     if( parent_item != nullptr ) {
-    int turns_elapsed = to_turns<int>( calendar::turn - link->last_processed );
-    link->last_processed = calendar::turn;
+        int turns_elapsed = to_turns<int>( calendar::turn - link->last_processed );
+        link->last_processed = calendar::turn;
 
         int power_draw = 0;
 
