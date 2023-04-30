@@ -38,9 +38,9 @@
       {
         "id": "not_driving",
         "widgets": [ "structured_wield_simple", "structured_speed_layout" ],
-        "condition": { "not": "u_driving" }
+        "condition": { "not": "u_controlling" }
       },
-      { "id": "driving", "widgets": [ "structured_fuel", "structured_vehicle_speed" ], "condition": "u_driving" }
+      { "id": "driving", "widgets": [ "structured_fuel", "structured_vehicle_speed" ], "condition": "u_controlling" }
     ]
   },
   {

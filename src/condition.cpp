@@ -1091,6 +1091,17 @@ void conditional_t::set_has_weapon( bool is_npc )
     };
 }
 
+void conditional_t::set_is_controlling( bool is_npc )
+{
+    condition = [is_npc]( dialogue const & d ) {
+        const talker *actor = d.actor( is_npc );
+        if( const optional_vpart_position vp = get_map().veh_at( actor->pos() ) ) {
+            return actor->is_in_control_of( vp->vehicle() );
+        }
+        return false;
+    };
+}
+
 void conditional_t::set_is_driving( bool is_npc )
 {
     condition = [is_npc]( dialogue const & d ) {
@@ -3209,6 +3220,10 @@ conditional_t::conditional_t( const std::string &type )
         set_has_weapon();
     } else if( type == "npc_has_weapon" ) {
         set_has_weapon( is_npc );
+    } else if( type == "u_controlling" ) {
+        set_is_controlling();
+    } else if( type == "npc_controlling" ) {
+        set_is_controlling( is_npc );
     } else if( type == "u_driving" ) {
         set_is_driving();
     } else if( type == "npc_driving" ) {

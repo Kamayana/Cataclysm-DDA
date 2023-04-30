@@ -990,7 +990,8 @@ Condition | Type | Description
 `"u_can_stow_weapon"`<br/>`"npc_can_stow_weapon"` | simple string | `true` if the player character or NPC is wielding a weapon and has enough space to put it away.
 `"u_can_drop_weapon"`<br/>`"npc_can_drop_weapon"` | simple string | `true` if the player character or NPC is wielding a weapon and can drop it on the ground, i.e. weapon isn't unwieldable like retracted bionic claws or monomolecular blade bionics.
 `"u_has_weapon"`<br/>`"npc_has_weapon"` | simple string | `true` if the player character or NPC is wielding a weapon.
-`"u_driving"`<br/>`"npc_driving"` | simple string | `true` if the player character or NPC is operating a vehicle.  <b>Note</b> NPCs cannot currently operate vehicles.
+`"u_controlling"`<br/>`"npc_controlling"` | simple string | `true` if the player character or NPC is operating a vehicle.  <b>Note</b> NPCs cannot currently operate vehicles.
+`"u_driving"`<br/>`"npc_driving"` | simple string | `true` if the player character or NPC is operating a moving vehicle.  <b>Note</b> NPCs cannot currently operate vehicles.
 `"u_has_skill"`<br/>`"npc_has_skill"` | dictionary | `u_has_skill` or `npc_has_skill` must be a dictionary with a `skill` string or [variable object](#variable-object) and a `level` int or [variable object](#variable-object).<br/>`true` if the player character or NPC has at least the value of `level` in `skill`.
 `"u_know_recipe"` | string or [variable object](#variable-object) | `true` if the player character knows the recipe specified in `u_know_recipe`.  It only counts as known if it is actually memorized--holding a book with the recipe in it will not count.
 `"u_has_worn_with_flag"`<br/>`"npc_has_worn_with_flag"` | string or [variable object](#variable-object) | `true` if the player character or NPC is wearing something with the `u_has_worn_with_flag` or `npc_has_worn_with_flag` flag.
