@@ -1198,10 +1198,7 @@ void advanced_inventory::change_square( const aim_location changeSquare,
         } else {
             swap_panes();
         }
-    } else if( changeSquare == AIM_PARENT ) {
-        if( !spane.container ) {
-            return;
-        }
+    } else if( changeSquare == AIM_PARENT && spane.container ) {
         spane.target_item_after_recalc = spane.container;
         if( spane.container.has_parent() ) {
             if( spane.container_base_loc == AIM_INVENTORY && !spane.container.parent_item().has_parent() ) {
@@ -1261,8 +1258,20 @@ void advanced_inventory::change_square( const aim_location changeSquare,
             dpane.recalc = true;
         }
     } else {
-        popup( changeSquare != AIM_CONTAINER ? _( "You can't put items there!" ) :
-               _( "That isn't a container!" ) );
+        switch( changeSquare ) {
+            case AIM_DRAGGED:
+                popup_getkey( _( "You aren't dragging a vehicle." ) );
+                break;
+            case AIM_CONTAINER:
+                popup_getkey( _( "That isn't a container." ) );
+                break;
+            case AIM_PARENT:
+                popup_getkey( _( "You aren't in a container." ) );
+                break;
+            default:
+                popup_getkey( _( "You can't put items there." ) );
+                break;
+        }
     }
 }
 
