@@ -4390,7 +4390,8 @@ std::optional<int> link_up_actor::link_up( Character &p, item &it ) const
                                    ( it.link->length - respool_threshold ) * respool_time_per_square;
     const bool past_respool_threshold = it.link_length() > respool_threshold;
     const bool unspooled = it.link && it.link->has_state( link_state::needs_reeling );
-    const bool has_loose_end = !unspooled && is_cable_item ? !it.link || it.link->has_state( link_state::no_link ) :
+    const bool has_loose_end = !unspooled && is_cable_item ? !it.link ||
+                               it.link->has_state( link_state::no_link ) :
                                !it.link || it.link->has_no_links();
 
     uilist link_menu;
@@ -4424,7 +4425,8 @@ std::optional<int> link_up_actor::link_up( Character &p, item &it ) const
             }
         }
         if( !is_cable_item || !can_extend.empty() ) {
-            const bool has_extensions = !unspooled && !it.all_items_top( item_pocket::pocket_type::CABLE ).empty();
+            const bool has_extensions = !unspooled &&
+                                        !it.all_items_top( item_pocket::pocket_type::CABLE ).empty();
             link_menu.addentry( 30, has_loose_end, -1,
                                 is_cable_item ? _( "Extend another cable" ) : _( "Extend with another cable" ) );
             link_menu.addentry( 31, has_extensions, -1, _( "Remove cable extensions" ) );
@@ -4488,7 +4490,8 @@ std::optional<int> link_up_actor::link_up( Character &p, item &it ) const
             }
         }
         if( !can_extend.empty() ) {
-            const bool has_extensions = !unspooled && !it.all_items_top( item_pocket::pocket_type::CABLE ).empty();
+            const bool has_extensions = !unspooled &&
+                                        !it.all_items_top( item_pocket::pocket_type::CABLE ).empty();
             link_menu.addentry( 30, has_loose_end, -1, _( "Extend another cable" ) );
             link_menu.addentry( 31, has_extensions, -1, _( "Remove cable extensions" ) );
         }
@@ -4725,7 +4728,7 @@ std::optional<int> link_up_actor::link_to_veh_app( Character &p, item &it,
             return std::nullopt;
         }
         it.link->t_state = to_ports ? link_state::vehicle_port : link_state::vehicle_battery;
-        it.link->t_abs_pos = here.getglobal( pnt );
+        it.link->t_abs_pos = here.getglobal( t_vp->vehicle().global_pos3() );
         it.link->t_mount = t_vp->mount();
         it.set_link_traits();
         it.link->last_processed = calendar::turn;
@@ -4843,7 +4846,7 @@ std::optional<int> link_up_actor::link_tow_cable( Character &p, item &it,
         } else {
             it.link->t_state = link_state::vehicle_tow; // Assign towed vehicle.
         }
-        it.link->t_abs_pos = here.getglobal( pnt );
+        it.link->t_abs_pos = here.getglobal( t_vp->vehicle().global_pos3() );
         it.link->t_mount = t_vp->mount();
         it.link->max_length = cable_length != -1 ? cable_length : it.type->maximum_charges();
         it.link->last_processed = calendar::turn;
