@@ -5049,37 +5049,6 @@ void vehicle::power_parts()
     }
 }
 
-vehicle *vehicle::find_vehicle( const tripoint &where )
-{
-    map &here = get_map();
-    // Is it in the reality bubble?
-    tripoint veh_local = here.getlocal( where );
-    if( const optional_vpart_position vp = here.veh_at( veh_local ) ) {
-        return &vp->vehicle();
-    }
-
-    // Nope. Load up its submap...
-    point_sm_ms veh_in_sm;
-    tripoint_abs_sm veh_sm;
-    // TODO: fix point types
-    std::tie( veh_sm, veh_in_sm ) = project_remain<coords::sm>( tripoint_abs_ms( where ) );
-
-    const submap *sm = MAPBUFFER.lookup_submap( veh_sm );
-    if( sm == nullptr ) {
-        return nullptr;
-    }
-
-    for( const auto &elem : sm->vehicles ) {
-        vehicle *found_veh = elem.get();
-        // TODO: fix point types
-        if( veh_in_sm.raw() == found_veh->pos ) {
-            return found_veh;
-        }
-    }
-
-    return nullptr;
-}
-
 template<typename Vehicle> // Templated to support const and non-const vehicle*
 std::map<Vehicle *, float> vehicle::search_connected_vehicles( Vehicle *start )
 {
@@ -5104,7 +5073,7 @@ std::map<Vehicle *, float> vehicle::search_connected_vehicles( Vehicle *start )
                 continue;
             }
 
-            Vehicle *const v_next = vehicle::find_vehicle( vp.target.second );
+            Vehicle *const v_next = get_map().find_vehicle( tripoint_abs_ms( vp.target.second ) );
             if( v_next == nullptr ) { // vehicle's rolled away or off-map
                 continue;
             }
@@ -6652,11 +6621,12 @@ bool vehicle::no_towing_slack() const
 
 void vehicle::remove_remote_part( int part_num )
 {
-    vehicle *veh = find_vehicle( parts[part_num].target.second );
+    map &here = get_map();
+    vehicle *veh = here.find_vehicle( tripoint_abs_ms( parts[part_num].target.second ) );
 
     // If the target vehicle is still there, ask it to remove its part
     if( veh != nullptr ) {
-        const tripoint local_abs = get_map().getabs( global_part_pos3( part_num ) );
+        const tripoint local_abs = here.getabs( global_part_pos3( part_num ) );
 
         for( size_t j = 0; j < veh->loose_parts.size(); j++ ) {
             int remote_partnum = veh->loose_parts[j];
@@ -6686,7 +6656,7 @@ void vehicle::shed_loose_parts( const tripoint_bub_ms *src, const tripoint_bub_m
             int distance = rl_dist( here.getabs( bub_part_pos( parts[elem] ) ), parts[elem].target.second );
             int max_dist = parts[elem].get_base().link_length( true );
             if( src ) {
-                vehicle *veh = find_vehicle( parts[elem].target.second );
+                vehicle *veh = here.find_vehicle( tripoint_abs_ms( parts[elem].target.second ) );
                 if( veh != nullptr ) {
                     for( int remote_lp : veh->loose_parts ) {
                         if( veh->part_flag( remote_lp, "POWER_TRANSFER" ) &&
