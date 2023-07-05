@@ -6684,8 +6684,7 @@ void vehicle::shed_loose_parts( const tripoint_bub_ms *src, const tripoint_bub_m
         if( part_flag( elem, "POWER_TRANSFER" ) ) {
             int distance = rl_dist( here.getabs( bub_part_pos( parts[elem] ) ), parts[elem].target.second );
             int max_dist = parts[elem].get_base().type->maximum_charges();
-            if( src && ( max_dist - distance ) > 0 ) {
-                // power line still has some slack to it, so keep it attached for now
+            if( src ) {
                 vehicle *veh = find_vehicle( parts[elem].target.second );
                 if( veh != nullptr ) {
                     for( int remote_lp : veh->loose_parts ) {
@@ -6697,7 +6696,10 @@ void vehicle::shed_loose_parts( const tripoint_bub_ms *src, const tripoint_bub_m
                         }
                     }
                 }
+                if( ( max_dist - distance ) > 0 ) {
+                    // power line still has some slack to it, so keep it attached for now
                 continue;
+            }
             }
             add_msg_if_player_sees( global_part_pos3( parts[elem] ), m_warning,
                                     _( "The %s's power connection was detached!" ), name );
