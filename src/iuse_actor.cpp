@@ -4762,28 +4762,27 @@ std::optional<int> link_up_actor::link_to_veh_app( Character &p, item &it,
         }
 
             const itype_id item_id = it.typeId();
-            bool vpid_found = false;
-            for( const vpart_info &vpi : vehicles::parts::get_all() ) {
-                if( vpi.base_item == item_id ) {
-                    vpid_found = true;
+        vpart_id vpid = vpart_id::NULL_ID();
+        for( const vpart_info &e : vehicles::parts::get_all() ) {
+            if( e.base_item == item_id ) {
+                vpid = e.id;
                     break;
                 }
             }
 
-        if( !vpid_found ) {
-            debugmsg( "item %s is not base item of any vehicle part!  Using jumper_cable as a fallback",
-                      item_id.c_str() );
+        if( vpid.is_null() ) {
+            debugmsg( "item %s is not base item of any vehicle part!", item_id.c_str() );
+            return std::nullopt;
         }
-        const vpart_id vpid( vpid_found ? item_id.str() : "jumper_cable" );
 
         point vcoords = it.link->t_mount;
-        vehicle_part source_part( vpid, vpid_found ? item( it ) : item( "jumper_cable" ) );
+        vehicle_part source_part( vpid, item( it ) );
         source_part.target.first = here.getabs( pnt );
         source_part.target.second = target_veh->global_square_location().raw();
         prev_veh->install_part( vcoords, std::move( source_part ) );
 
         vcoords = t_vp->mount();
-        vehicle_part target_part( vpid, vpid_found ? item( it ) : item( "jumper_cable" ) );
+        vehicle_part target_part( vpid, item( it ) );
         target_part.target.first = prev_target.first;
         target_part.target.second = prev_target.second;
         target_veh->install_part( vcoords, std::move( target_part ) );
