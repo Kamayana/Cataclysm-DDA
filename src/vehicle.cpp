@@ -6676,10 +6676,6 @@ void vehicle::shed_loose_parts( const tripoint_bub_ms *src, const tripoint_bub_m
                                     _( "The %s's power connection was detached!" ), name );
             remove_remote_part( elem );
         }
-        if( part_flag( elem, "TOW_CABLE" ) ) {
-            invalidate_towing( true );
-            continue;
-        }
         const item drop = part( elem ).properties_to_item();
         if( !magic && !drop.has_flag( flag_AUTO_DELETE_CABLE ) ) {
             here.add_item_or_charges( global_part_pos3( part( elem ) ) + drop_offset, drop );
