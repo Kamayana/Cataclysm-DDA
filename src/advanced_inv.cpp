@@ -272,7 +272,7 @@ void advanced_inventory::init()
     }
 }
 
-void advanced_inventory::print_items( const advanced_inventory_pane &pane, bool active )
+void advanced_inventory::print_items( const advanced_inventory_pane &pane, bool active, side pane_side )
 {
     const auto &items = pane.items;
     const catacurses::window &window = pane.window;
@@ -418,13 +418,20 @@ void advanced_inventory::print_items( const advanced_inventory_pane &pane, bool 
         nc_color print_color;
 
         if( selected ) {
-            thiscolor = inCategoryMode && pane.sortby == SORTBY_CATEGORY ? c_white_red : hilite( c_white );
+            if( !sitem.in_other_pane ) {
+                thiscolor = inCategoryMode && pane.sortby == SORTBY_CATEGORY ? c_white_red : hilite( c_white );
+            } else {
+                thiscolor = c_white_magenta;
+            }
             thiscolordark = hilite( thiscolordark );
             if( compact ) {
                 mvwprintz( window, point( 1, 6 + item_line ), thiscolor, "  %s", spaces );
             } else {
                 mvwprintz( window, point( 1, 6 + item_line ), thiscolor, ">>%s", spaces );
             }
+        } else if( sitem.in_other_pane ) {
+            thiscolor = i_magenta;
+            mvwprintz( window, point( 1, 6 + item_line ), thiscolor, spaces );
         }
 
         std::string item_name;
@@ -456,6 +463,9 @@ void advanced_inventory::print_items( const advanced_inventory_pane &pane, bool 
         }
         if( get_option<bool>( "ITEM_SYMBOLS" ) ) {
             item_name = string_format( "%s %s", it.symbol(), item_name );
+        }
+        if( sitem.in_other_pane ) {
+            item_name = string_format( "%s %s", pane_side == side::left ? "▶" : "◀", item_name );
         }
 
         //print item name
@@ -741,13 +751,20 @@ void advanced_inventory::recalc_pane( side p )
     }
 
     // Prevent same container item appearing in this pane when other pane is the container view.
-    if( there.container ) {
+    /*if( there.container ) {
         std::vector<advanced_inv_listitem>::iterator outer_iter = pane.items.begin();
         while( outer_iter != pane.items.end() ) {
             if( *outer_iter->items.begin() == there.container ) {
                 outer_iter = pane.items.erase( outer_iter );
             } else {
                 outer_iter++;
+            }
+        }
+    }*/
+    if( there.container ) {
+        for( advanced_inv_listitem &listit : pane.items ) {
+            if( listit.items.front() == there.container ) {
+                listit.in_other_pane = true;
             }
         }
     }
@@ -782,7 +799,7 @@ void advanced_inventory::redraw_pane( side p )
     catacurses::window w = pane.window;
 
     werase( w );
-    print_items( pane, active );
+    print_items( pane, active, p );
 
     advanced_inv_listitem *itm = pane.get_cur_item_ptr();
     int width = print_header( pane, itm != nullptr ? itm->area : pane.get_area() );
@@ -859,16 +876,31 @@ std::string advanced_inventory::fill_lists_with_pane_items( Character &player_ch
 {
     std::string skipped_items_message;
     int buckets = 0;
+    units::volume total_volume;
+    units::volume total_fav_volume;
+    std::bitset<NUM_SKIP_REASONS> skip_reasons;
+    //std::vector<std::string> skip_reasons;
     for( const advanced_inv_listitem &listit : spane.items ) {
+        if( listit.in_other_pane ) {
+            continue;
+        }
         for( const item_location &it : listit.items ) {
             if( ( it->made_of_from_type( phase_id::LIQUID ) && !it->is_frozen_liquid() ) ||
                 it->made_of_from_type( phase_id::GAS ) ) {
                 continue;
             }
             if( it == player_character.get_wielded_item() ) {
+                //skip_reasons.set( is_wielded );
+                //skip_reasons.emplace_back( "wielded items can't be moved with MOVE ALL" );
+                if( skipped_items_message.empty() ) {
+                    skipped_items_message = _( "Wielded items can't be moved with MOVE ALL" );
+                } else {
+                    skipped_items_message.append( _( ", wielded items can't be moved with MOVE ALL" ) );
+                }
                 continue;
             }
             if( filter_buckets && it->is_bucket_nonempty() ) {
+                skip_reasons.set( would_spill );
                 if( buckets == 0 ) {
                     buckets = 1;
                     skipped_items_message = string_format( _( " The %s would've spilled if moved there." ),
@@ -884,11 +916,19 @@ std::string advanced_inventory::fill_lists_with_pane_items( Character &player_ch
             }
             if( it->is_favorite ) {
                 fav_list.emplace_back( it, it->count() );
+                total_fav_volume += it->volume();
             } else {
                 item_list.emplace_back( it, it->count() );
+                total_volume += it->volume();
             }
         }
     }
+    /*enumerate_as_string( skip_reasons, enumeration_conjunction::or_ );
+    if( !targets_strings.empty() ) {
+        std::string targets_string = enumerate_as_string( targets_strings, enumeration_conjunction::or_ );
+        dump.emplace_back( "TOOL",
+            string_format( _( "<bold>Can be plugged into</bold>: %s." ), targets_string ) );
+    }*/
     return skipped_items_message;
 }
 
@@ -903,7 +943,7 @@ bool advanced_inventory::move_all_items()
     if( spane.get_area() == AIM_CONTAINER && dpane.get_area() == AIM_INVENTORY ) {
         if( spane.container.held_by( player_character ) ) {
             // TODO: Implement this, distributing the contents to other inventory pockets.
-            popup( _( "You already have everything in that container." ) );
+            popup_getkey( _( "You already have everything in that container." ) );
             return false;
         }
     }
@@ -919,7 +959,7 @@ bool advanced_inventory::move_all_items()
 
     if( spane.items.empty() || liquid_items == spane.items.size() ) {
         if( !is_processing() ) {
-            popup( _( "No eligible items found to be moved." ) );
+            popup_getkey( _( "No eligible items found to be moved." ) );
         } else if( spane.get_area() != AIM_ALL ) {
             // ensure we don't get stuck if the recursive calls in the switch above were interrupted
             // by a save-load cycle before the shadowed pane was restored
@@ -939,7 +979,7 @@ bool advanced_inventory::move_all_items()
         } );
     }
     if( !squares[dpane.get_area()].canputitems( dpane.container ) ) {
-        popup( _( "You can't put items there!" ) );
+        popup_getkey( _( "You can't put items there." ) );
         return false;
     }
     advanced_inv_area &sarea = squares[spane.get_area()];
@@ -958,31 +998,18 @@ bool advanced_inventory::move_all_items()
 
     if( spane.get_area() == AIM_INVENTORY || spane.get_area() == AIM_WORN ) {
         if( dpane.get_area() == AIM_INVENTORY ) {
-            popup( _( "You try to put your bags into themselves, but physics won't let you." ) );
+            popup_getkey( _( "You try to put your bags into themselves, but physics won't let you." ) );
             return false;
         } else if( dpane.get_area() == AIM_WORN ) {
             // TODO: implement move_all to worn from inventory.
-            popup( _( "Putting on everything from your inventory would be tricky.  Try equipping one by one." ) );
+            popup_getkey( _( "Putting on everything from your inventory would be tricky.  Try equipping one by one." ) );
             return false;
         }
     }
 
     if( dpane.get_area() == AIM_WORN ) {
         // TODO: implement move_all to worn from everywhere other than inventory.
-        popup( _( "You look at the items, then your clothes, and scratch your head…  Try equipping one by one." ) );
-        return false;
-    }
-
-    // Check first if the destination area still has enough room for moving all.
-    const units::volume &src_volume = spane.in_vehicle() ? sarea.volume_veh : sarea.volume;
-    units::volume dest_volume_free;
-    if( dpane.container ) {
-        dest_volume_free = dpane.container->get_remaining_capacity();
-    } else {
-        dest_volume_free = darea.free_volume( dpane.in_vehicle() );
-    }
-    if( !is_processing() && src_volume > dest_volume_free &&
-        !query_yn( _( "There isn't enough room.  Attempt to move as much as you can?" ) ) ) {
+        popup_getkey( _( "You look at the items, then your clothes, and scratch your head…  Try equipping one by one." ) );
         return false;
     }
 
@@ -995,20 +1022,75 @@ bool advanced_inventory::move_all_items()
     std::string skipped_items_message = fill_lists_with_pane_items( player_character, spane, pane_items,
                                         pane_favs, filter_buckets );
 
-    // Move all the favorite items only if there are no other items
+    bool has_enough_room_for_all = true;
+    const auto set_has_enough_room_for_all = [&pane_items,&dpane,&darea,&has_enough_room_for_all]() {
+        const units::volume dest_avail_volume = dpane.container ? dpane.container->get_remaining_capacity() :
+                                                                  darea.free_volume( dpane.in_vehicle() );
+        const units::volume all_item_volumes = std::accumulate( pane_items.begin(), pane_items.end(), 0_ml,
+                                                                []( units::volume sum, drop_or_stash_item_info & it ) {
+                                                                    return sum + it.loc()->volume();
+                                                                } );
+        return has_enough_room_for_all = dest_avail_volume > all_item_volumes;
+    };
+
+    const auto sort_fittable_items_by_volume = [&pane_items,dpane]() {
+        pane_items.erase( std::remove_if( pane_items.begin(), pane_items.end(),
+            [dpane]( const drop_or_stash_item_info & drop ) {
+                item it = *drop.loc().get_item();
+                if( !it.count_by_charges() ) {
+                    return !( dpane.container->can_contain_directly( it ).success() &&
+                              dpane.container.parents_can_contain_recursive( &it ) );
+                }
+                return !dpane.container->can_contain_partial_directly( *drop.loc().get_item() );
+            } ), pane_items.end() );
+
+        std::sort( pane_items.begin(), pane_items.end(),
+            []( const drop_or_stash_item_info & lhs, const drop_or_stash_item_info & rhs ) {
+                return lhs.loc()->volume() < rhs.loc()->volume();
+            } );
+    };
+
+    if( !set_has_enough_room_for_all() ) {
+        sort_fittable_items_by_volume();
+    }
+
+    bool ask_to_move_favs = false;
+    // Move favorite items only if there are no normal items available to move.
     if( pane_items.empty() ) {
         // Check if the list is still empty for when all that's in the aim_worn list is a wielded weapon.
-        if( pane_favs.empty() ) {
-            popup( string_format( _( "No eligible items found to be moved.%s" ), skipped_items_message ) );
+        /*if( pane_favs.empty() ) {
+            popup( string_format( _( "No items could be moved there.%s" ), skipped_items_message ), PF_GET_KEY );
+            return false;
+        }*/
+        // Prompt the player if favorites would be leaving the player's inventory.
+        ask_to_move_favs = ( spane.get_area() == AIM_INVENTORY || spane.get_area() == AIM_WORN ||
+            ( spane.container && spane.container.where_recursive() == item_location::type::character ) ) &&
+            ( dpane.get_area() != AIM_INVENTORY && dpane.get_area() != AIM_WORN &&
+            !( dpane.container && dpane.container.where_recursive() == item_location::type::character ) );
+            //ask_to_move_favs = true;
+            /*if( !query_yn( _( "Really drop all your favorite items?" ) ) ) {
+                return false;
+            }*/
+        pane_items = pane_favs;
+        if( !set_has_enough_room_for_all() ) {
+            sort_fittable_items_by_volume();
+        }
+        // Check for an empty list, in case it turns out none of the favs can be moved either.
+        if( pane_items.empty() ) {
+            popup( string_format( skipped_items_message.empty() ? _( "None of the items can fit there." ) :
+                   _( "%s, and none of the other items can fit there." ), skipped_items_message ), PF_GET_KEY );
             return false;
         }
-        // Ask to move favorites if the player is holding them
-        if( spane.get_area() == AIM_INVENTORY || spane.get_area() == AIM_WORN ) {
-            if( !query_yn( _( "Really drop all your favorite items?" ) ) ) {
-                return false;
-            }
+    }
+
+    // Save the confirmations for the end in case there ends up being no reason to ask.
+    if( !is_processing() ) {
+        if( !has_enough_room_for_all && !query_yn( _( "There isn't enough room.  Attempt to move as much as you can?" ) ) ) {
+            return false;
         }
-        pane_items = pane_favs;
+        if( ask_to_move_favs && !query_yn( _( "Really drop all your favorite items?" ) ) ) {
+            return false;
+        }
     }
 
     if( !skipped_items_message.empty() ) {
@@ -1323,16 +1405,20 @@ void advanced_inventory::start_activity(
             debugmsg( "Active container is null, failed to insert!" );
             return;
         }
+        if( sitem->items.front() == panes[dest].container ) {
+            popup_getkey( _( "You can't put the %s inside itself." ), sitem->items.front()->type_name() );
+            return;
+        }
         if( panes[dest].container->will_spill_if_unsealed()
             && panes[dest].container.where() != item_location::type::map
             && !player_character.is_wielding( *panes[dest].container ) ) {
 
-            popup( _( "The %s would spill unless it's on the ground or wielded." ),
+            popup_getkey( _( "The %s would spill unless it's on the ground or wielded." ),
                    panes[dest].container->type_name() );
             return;
         }
         if( sitem->items.front()->is_bucket_nonempty() ) {
-            popup( _( "The %s would spill if moved there." ), sitem->items.front()->tname() );
+            popup_getkey( _( "The %s would spill if moved there." ), sitem->items.front()->type_name() );
             return;
         }
         // Create drop locations out of target items and quantities
@@ -1370,14 +1456,18 @@ bool advanced_inventory::action_move_item( advanced_inv_listitem *sitem,
     bool from_vehicle = sitem->from_vehicle;
     bool to_vehicle = dpane.in_vehicle();
 
+    // Same location check for AIM_CONTAINER and AIM_ALL.
     // AIM_ALL should disable same area check and handle it with proper filtering instead.
     // This is a workaround around the lack of vehicle location info in
     // either aim_location or advanced_inv_listitem.
-    if( spane.container ? spane.container == dpane.container :
-        squares[srcarea].is_same( squares[destarea] ) &&
-        spane.get_area() != AIM_ALL &&
-        spane.in_vehicle() == dpane.in_vehicle() ) {
-        popup( _( "Source area is the same as destination (%s)." ), squares[destarea].name );
+    if( spane.container ) {
+        if( spane.container == dpane.container ) {
+            popup_getkey( _( "The %1$s is already in the %2$s." ), sitem->items.front()->type_name(), dpane.container->type_name() );
+            return false;
+        }
+    } else if( squares[srcarea].is_same( squares[destarea] ) &&
+               spane.get_area() != AIM_ALL && spane.in_vehicle() == dpane.in_vehicle() ) {
+        popup_getkey( _( "The %1$s is already there." ), sitem->items.front()->type_name() );
         return false;
     }
     cata_assert( !sitem->items.empty() );
@@ -1385,7 +1475,7 @@ bool advanced_inventory::action_move_item( advanced_inv_listitem *sitem,
     if( destarea == AIM_WORN ) {
         ret_val<void> can_wear = player_character.can_wear( *sitem->items.front().get_item() );
         if( !can_wear.success() ) {
-            popup( can_wear.str() );
+            popup( can_wear.str(), PF_GET_KEY );
             return false;
         }
     }
@@ -1401,7 +1491,7 @@ bool advanced_inventory::action_move_item( advanced_inv_listitem *sitem,
     cata_assert( amount_to_move > 0 );
     if( srcarea == AIM_CONTAINER && destarea == AIM_INVENTORY &&
         spane.container.held_by( player_character ) ) {
-        popup( _( "The %s is already in your inventory." ), sitem->items.front()->tname() );
+        popup_getkey( _( "The %s is already in your inventory." ), sitem->items.front()->tname() );
 
     } else if( srcarea == AIM_INVENTORY && destarea == AIM_WORN ) {
 
@@ -1465,7 +1555,7 @@ bool advanced_inventory::action_move_item( advanced_inv_listitem *sitem,
             can_stash = player_character.can_stash( *sitem->items.front() );
         }
         if( destarea == AIM_INVENTORY && !can_stash ) {
-            popup( _( "You have no space for the %s!" ), sitem->items.front()->tname() );
+            popup_getkey( _( "You have no space for the %s!" ), sitem->items.front()->tname() );
             return false;
         }
         // from map/vehicle: start ACT_PICKUP or ACT_MOVE_ITEMS as necessary
@@ -1784,7 +1874,7 @@ void advanced_inventory::display()
                     }
                 }
             } else {
-                popup( _( "No vehicle storage space there!" ) );
+                popup_getkey( _( "There's no vehicle storage space there." ) );
             }
         }
     }
@@ -1836,7 +1926,7 @@ bool advanced_inventory::query_destination( aim_location &def )
         if( squares[def].canputitems( panes[dest].container ) ) {
             return true;
         }
-        popup( _( "You can't put items there!" ) );
+        popup_getkey( _( "You can't put items there." ) );
         return false;
     }
 
@@ -1884,6 +1974,7 @@ bool advanced_inventory::query_destination( aim_location &def )
 
 bool advanced_inventory::move_content( item &src_container, item &dest_container )
 {
+    // DELETE THIS
     if( !src_container.is_container() ) {
         popup( _( "Source must be a container." ) );
         return false;
@@ -1941,11 +2032,11 @@ bool advanced_inventory::query_charges( aim_location destarea, const advanced_in
 
     // Includes moving from/to inventory and around on the map.
     if( it.made_of_from_type( phase_id::LIQUID ) && !it.is_frozen_liquid() ) {
-        popup( _( "Spilt liquid cannot be picked back up.  Try mopping them up instead." ) );
+        popup_getkey( _( "Spilt liquid cannot be picked back up.  Try mopping them up instead." ) );
         return false;
     }
     if( it.made_of_from_type( phase_id::GAS ) ) {
-        popup( _( "Spilt gasses cannot be picked up.  They will disappear over time." ) );
+        popup_getkey( _( "Spilt gasses cannot be picked up.  They will disappear over time." ) );
         return false;
     }
 
@@ -1954,9 +2045,9 @@ bool advanced_inventory::query_charges( aim_location destarea, const advanced_in
     if( amount > room_for && squares[destarea].id != AIM_WORN ) {
         if( room_for <= 0 ) {
             if( destarea == AIM_INVENTORY ) {
-                popup( _( "You have no space for the %s!" ), it.tname() );
+                popup_getkey( _( "You have no space for the %s!" ), it.tname() );
             } else {
-                popup( _( "Destination area is full.  Remove some items first." ) );
+                popup_getkey( _( "Destination area is full.  Remove some items first." ) );
             }
             return false;
         }
@@ -1973,7 +2064,7 @@ bool advanced_inventory::query_charges( aim_location destarea, const advanced_in
             return li.items.front()->stacks_with( it );
         } );
         if( cntmax <= 0 && !adds0 ) {
-            popup( _( "Destination area has too many items.  Remove some first." ) );
+            popup_getkey( _( "Destination area has too many items.  Remove some first." ) );
             return false;
         }
         // Items by charge count as a single item, regardless of the charges. As long as the
@@ -1991,7 +2082,7 @@ bool advanced_inventory::query_charges( aim_location destarea, const advanced_in
         if( unitweight > 0_gram && unitweight * amount > max_weight ) {
             const int weightmax = max_weight / unitweight;
             if( weightmax <= 0 ) {
-                popup( _( "This is too heavy!" ) );
+                popup_getkey( _( "This is too heavy!" ) );
                 return false;
             }
             amount = std::min( weightmax, amount );
@@ -2020,7 +2111,7 @@ bool advanced_inventory::query_charges( aim_location destarea, const advanced_in
         // At this point amount contains the maximal amount that the destination can hold.
         const int possible_max = std::min( input_amount, amount );
         if( amount <= 0 ) {
-            popup( _( "The destination is already full!" ) );
+            popup_getkey( _( "The destination is already full!" ) );
         } else {
             amount = string_input_popup()
                      .title( popupmsg )

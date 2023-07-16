@@ -41,6 +41,10 @@ class advanced_inv_listitem
          */
         std::string name_without_prefix;
         /**
+        * TODOkama
+        */
+        bool in_other_pane = false;
+        /**
          * Whether auto pickup is enabled for this item (based on the name).
          */
         bool autopickup = false;
