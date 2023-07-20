@@ -69,7 +69,9 @@ class item_pocket
             // requires a flag
             ERR_FLAG,
             // requires item be a specific ammotype
-            ERR_AMMO
+            ERR_AMMO,
+            // trying to put an item that would spill into a container
+            ERR_WOULD_SPILL
         };
 
         class favorite_settings

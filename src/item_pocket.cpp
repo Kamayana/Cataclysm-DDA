@@ -1417,6 +1417,11 @@ ret_val<item_pocket::contain_code> item_pocket::can_contain( const item &it ) co
         return compatible;
     }
 
+    if( it.will_spill() ) {
+        return ret_val<item_pocket::contain_code>::make_failure(
+            contain_code::ERR_WOULD_SPILL, _( "item would spill" ) );
+    }
+
     if( data->type == item_pocket::pocket_type::MAGAZINE && !empty() ) {
         for( const item &contained : contents ) {
             if( contained.has_flag( flag_CASING ) ) {

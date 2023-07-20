@@ -4208,10 +4208,16 @@ void insert_item_activity_actor::finish( player_activity &act, Character &who )
         }
 
         if( !success ) {
-            who.add_msg_if_player(
-                string_format(
-                    _( "Could not put %1$s into %2$s, aborting." ),
-                    it.tname(), holster->tname() ) );
+            //TODO This is repeating earlier processing just to get a proper error message. If fill_with returned a ret_val<item_pocket::contain_code> this could be avoided.
+            item_pocket *pocket = holster->get_all_contained_pockets()[0];
+            auto pocket_ret = pocket->can_contain( it );
+            if( pocket_ret.success() ) {
+                who.add_msg_if_player( string_format( _( "Can't put %1$s into %2$s." ),
+                        it.type_name(), holster->type_name() ) );
+            } else {
+                who.add_msg_if_player( string_format( _( "Can't put %1$s into %2$s, %3$s." ),
+                        it.type_name(), holster->type_name(), pocket_ret.c_str() ) );
+            }
         }
     } else {
         // item was lost, so just go to next item

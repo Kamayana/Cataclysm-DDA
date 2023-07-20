@@ -864,31 +864,33 @@ std::string advanced_inventory::fill_lists_with_pane_items( side &p, Character &
         std::vector<drop_or_stash_item_info> &item_list,
         std::vector<drop_or_stash_item_info> &fav_list, bool filter_buckets = false )
 {
-    std::string skipped_items_message;
+    std::vector<std::string> skip_reasons;
+    std::string skipped_buckets_message;
     int buckets = 0;
     for( const advanced_inv_listitem &listit : panes[p].items ) {
         if( listit.items.front() == panes[-p + 1].container ) {
             continue;
         }
         for( const item_location &it : listit.items ) {
-            if( ( it->made_of_from_type( phase_id::LIQUID ) && !it->is_frozen_liquid() ) ||
+            /*if( ( it->made_of_from_type( phase_id::LIQUID ) && !it->is_frozen_liquid() ) ||
                 it->made_of_from_type( phase_id::GAS ) ) {
                 continue;
-            }
+            }*/
             if( it == player_character.get_wielded_item() ) {
+                skip_reasons.emplace_back( "wielded items can't be moved with MOVE ALL" );
                 continue;
             }
-            if( filter_buckets && it->is_bucket_nonempty() ) {
+            /*if( filter_buckets && it->is_bucket_nonempty() ) {
                 if( buckets == 0 ) {
                     buckets = 1;
-                    skipped_items_message = string_format( _( " The %s would've spilled if moved there." ),
+                    skipped_buckets_message = string_format( _( " The %s would've spilled if moved there." ),
                                                            it->tname() );
                 } else if( buckets == 1 ) {
                     buckets = 2;
-                    skipped_items_message = _( " Some items would've spilled if moved there." );
+                    skipped_buckets_message = _( " Some items would've spilled if moved there." );
                 }
                 continue;
-            }
+            }*/
             if( it->is_corpse() && !it->empty_container() ) {
                 continue;
             }
@@ -899,9 +901,12 @@ std::string advanced_inventory::fill_lists_with_pane_items( side &p, Character &
             }
         }
     }
-    return skipped_items_message;
+    
+    //skip_reasons.emplace_back( buckets );
+    //return enumerate_as_string( skip_reasons, skipped_buckets_message, enumeration_conjunction::and_ );
+    return "";
 }
-
+#pragma optimize("", off)
 bool advanced_inventory::move_all_items()
 {
     advanced_inventory_pane &spane = panes[src];
@@ -1007,6 +1012,89 @@ bool advanced_inventory::move_all_items()
 
     std::string skipped_items_message = fill_lists_with_pane_items( src, player_character,
                                         pane_items, pane_favs, filter_buckets );
+
+
+
+
+
+
+        bool has_enough_room_for_all = true;
+    const auto set_has_enough_room_for_all = [&pane_items, &dpane, &darea, &has_enough_room_for_all]() {
+        const units::volume dest_avail_volume = dpane.container ? dpane.container->get_remaining_capacity() :
+                                                darea.free_volume( dpane.in_vehicle() );
+        const units::volume all_item_volumes = std::accumulate( pane_items.begin(), pane_items.end(), 0_ml,
+        []( units::volume sum, drop_or_stash_item_info & it ) {
+            return sum + it.loc()->volume();
+        } );
+        return has_enough_room_for_all = dest_avail_volume > all_item_volumes;
+    };
+
+    const auto sort_fittable_items_by_volume = [&pane_items, dpane]() {
+        pane_items.erase( std::remove_if( pane_items.begin(), pane_items.end(),
+        [dpane]( const drop_or_stash_item_info & drop ) {
+            item it = *drop.loc().get_item();
+            if( !it.count_by_charges() ) {
+                return !( dpane.container->can_contain_directly( it ).success() &&
+                          dpane.container.parents_can_contain_recursive( &it ) );
+            }
+            return !dpane.container->can_contain_partial_directly( *drop.loc().get_item() );
+        } ), pane_items.end() );
+
+        std::sort( pane_items.begin(), pane_items.end(),
+        []( const drop_or_stash_item_info & lhs, const drop_or_stash_item_info & rhs ) {
+            return lhs.loc()->volume() < rhs.loc()->volume();
+        } );
+    };
+
+    if( !set_has_enough_room_for_all() ) {
+        sort_fittable_items_by_volume();
+    }
+
+    bool ask_to_move_favs = false;
+    // Move favorite items only if there are no normal items available to move.
+    if( pane_items.empty() ) {
+        // Check if the list is still empty for when all that's in the aim_worn list is a wielded weapon.
+        /*if( pane_favs.empty() ) {
+            popup( string_format( _( "No items could be moved there.%s" ), skipped_items_message ), PF_GET_KEY );
+            return false;
+        }*/
+        // Prompt the player if favorites would be leaving the player's inventory.
+        ask_to_move_favs = ( spane.get_area() == AIM_INVENTORY || spane.get_area() == AIM_WORN ||
+                             ( spane.container && spane.container.where_recursive() == item_location::type::character ) ) &&
+                           ( dpane.get_area() != AIM_INVENTORY && dpane.get_area() != AIM_WORN &&
+                             !( dpane.container && dpane.container.where_recursive() == item_location::type::character ) );
+        //ask_to_move_favs = true;
+        /*if( !query_yn( _( "Really drop all your favorite items?" ) ) ) {
+            return false;
+        }*/
+        pane_items = pane_favs;
+        if( !set_has_enough_room_for_all() ) {
+            sort_fittable_items_by_volume();
+        }
+        // Check for an empty list, in case it turns out none of the favs can be moved either.
+        if( pane_items.empty() ) {
+            popup( string_format( skipped_items_message.empty() ? _( "None of the items can fit there." ) :
+                                  _( "%s, and none of the other items can fit there." ), skipped_items_message ), PF_GET_KEY );
+            return false;
+        }
+    }
+
+    // Save the confirmations for the end in case there ends up being no reason to ask.
+    if( !is_processing() ) {
+        if( !has_enough_room_for_all &&
+            !query_yn( _( "There isn't enough room.  Attempt to move as much as you can?" ) ) ) {
+            return false;
+        }
+        if( ask_to_move_favs && !query_yn( _( "Really drop all your favorite items?" ) ) ) {
+            return false;
+        }
+    }
+
+
+
+
+
+
 
     // Move all the favorite items only if there are no other items
     if( pane_items.empty() ) {
@@ -1925,6 +2013,7 @@ bool advanced_inventory::query_destination( aim_location &def )
 
 bool advanced_inventory::move_content( item &src_container, item &dest_container )
 {
+    // DELETE THIS
     if( !src_container.is_container() ) {
         popup( _( "Source must be a container." ) );
         return false;
