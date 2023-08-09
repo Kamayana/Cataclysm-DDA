@@ -338,11 +338,13 @@ enum npc_chat_menu {
     NPC_CHAT_ACTIVITIES_CHOP_PLANKS,
     NPC_CHAT_ACTIVITIES_CHOP_TREES,
     NPC_CHAT_ACTIVITIES_CONSTRUCTION,
+    NPC_CHAT_ACTIVITIES_CRAFT,
     NPC_CHAT_ACTIVITIES_DISASSEMBLY,
     NPC_CHAT_ACTIVITIES_FARMING,
     NPC_CHAT_ACTIVITIES_FISHING,
     NPC_CHAT_ACTIVITIES_MINING,
     NPC_CHAT_ACTIVITIES_MOPPING,
+    NPC_CHAT_ACTIVITIES_READ_REPEATEDLY,
     NPC_CHAT_ACTIVITIES_VEHICLE_DECONSTRUCTION,
     NPC_CHAT_ACTIVITIES_VEHICLE_REPAIR,
     NPC_CHAT_ACTIVITIES_UNASSIGN
@@ -586,11 +588,14 @@ static int npc_activities_menu()
     nmenu.addentry( NPC_CHAT_ACTIVITIES_CHOP_TREES, true, 't', _( "Chopping down trees" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_CHOP_PLANKS, true, 'p', _( "Chopping logs into planks" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_CONSTRUCTION, true, 'c', _( "Constructing blueprints" ) );
+    nmenu.addentry( NPC_CHAT_ACTIVITIES_CRAFT, true, 'C', _( "Crafting item" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_DISASSEMBLY, true, 'd', _( "Disassembly of items" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_FARMING, true, 'f', _( "Farming plots" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_FISHING, true, 'F', _( "Fishing in a zone" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_MINING, true, 'M', _( "Mining out tiles" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_MOPPING, true, 'm', _( "Mopping up stains" ) );
+    nmenu.addentry( NPC_CHAT_ACTIVITIES_READ_REPEATEDLY, true, 'R',
+                    _( "Study from books you have in order" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_VEHICLE_DECONSTRUCTION, true, 'v',
                     _( "Deconstructing vehicles" ) );
     nmenu.addentry( NPC_CHAT_ACTIVITIES_VEHICLE_REPAIR, true, 'V', _( "Repairing vehicles" ) );
@@ -1026,6 +1031,10 @@ void game::chat()
                         talk_function::do_construction( *selected_npc );
                         break;
                     }
+                    case NPC_CHAT_ACTIVITIES_CRAFT: {
+                        talk_function::do_craft( *selected_npc );
+                        break;
+                    }
                     case NPC_CHAT_ACTIVITIES_DISASSEMBLY: {
                         talk_function::do_disassembly( *selected_npc );
                         break;
@@ -1036,6 +1045,10 @@ void game::chat()
                     }
                     case NPC_CHAT_ACTIVITIES_FISHING: {
                         talk_function::do_fishing( *selected_npc );
+                        break;
+                    }
+                    case NPC_CHAT_ACTIVITIES_READ_REPEATEDLY: {
+                        talk_function::do_read_repeatedly( *selected_npc );
                         break;
                     }
                     case NPC_CHAT_ACTIVITIES_MINING: {
@@ -5407,6 +5420,8 @@ void talk_effect_t::parse_string_effect( const std::string &effect_id, const Jso
             WRAP( do_mopping ),
             WRAP( do_read ),
             WRAP( do_eread ),
+            WRAP( do_read_repeatedly ),
+            WRAP( do_craft ),
             WRAP( do_butcher ),
             WRAP( do_farming ),
             WRAP( assign_guard ),

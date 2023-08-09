@@ -150,7 +150,7 @@ advanced_inventory::advanced_inventory()
         { AIM_DRAGGED,   point( 22, 3 ), tripoint_zero,       _( "Grabbed Vehicle" ),    _( "GR" ),  "D", "ITEMS_DRAGGED_CONTAINER", AIM_DRAGGED},
         { AIM_ALL,       point( 25, 3 ), tripoint_zero,       _( "Surrounding area" ),   _( "AL" ),  "A", "ITEMS_AROUND",    AIM_ALL},
         { AIM_CONTAINER, point( 25, 1 ), tripoint_zero,       _( "Container" ),          _( "CN" ),  "C", "ITEMS_CONTAINER", AIM_CONTAINER},
-        { AIM_PARENT,    point( 22, 1 ), tripoint_zero,       _( "" ),                   _( "" ),    "X", "ITEMS_PARENT",    AIM_PARENT},
+        { AIM_PARENT,    point( 22, 1 ), tripoint_zero,       "",                        "",         "X", "ITEMS_PARENT",    AIM_PARENT},
         { AIM_WORN,      point( 22, 2 ), tripoint_zero,       _( "Worn Items" ),         _( "WR" ),  "W", "ITEMS_WORN",      AIM_WORN}
     }
 } )
@@ -643,19 +643,11 @@ struct advanced_inv_sorter {
                 }
                 break;
         }
-        // secondary sort by name
-        const std::string *n1;
-        const std::string *n2;
-        if( d1.name_without_prefix == d2.name_without_prefix ) {
-            //if names without prefix equal, compare full name
-            n1 = &d1.name;
-            n2 = &d2.name;
-        } else {
-            //else compare name without prefix
-            n1 = &d1.name_without_prefix;
-            n2 = &d2.name_without_prefix;
-        }
-        return localized_compare( *n1, *n2 );
+        // secondary sort by name and link length
+        auto const sort_key = []( advanced_inv_listitem const & d ) {
+            return std::make_tuple( d.name_without_prefix, d.name, d.items.front()->link_sort_key() );
+        };
+        return localized_compare( sort_key( d1 ), sort_key( d2 ) );
     }
 };
 
@@ -1666,7 +1658,9 @@ void advanced_inventory::display()
 
         if( ui ) {
             ui->invalidate_ui();
-            g->invalidate_main_ui_adaptor();
+            if( recalc ) {
+                g->invalidate_main_ui_adaptor();
+            }
             ui_manager::redraw_invalidated();
         }
 

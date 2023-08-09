@@ -117,6 +117,7 @@ static const activity_id ACT_HAIRCUT( "ACT_HAIRCUT" );
 static const activity_id ACT_HARVEST( "ACT_HARVEST" );
 static const activity_id ACT_HOTWIRE_CAR( "ACT_HOTWIRE_CAR" );
 static const activity_id ACT_INSERT_ITEM( "ACT_INSERT_ITEM" );
+static const activity_id ACT_INVOKE_ITEM( "ACT_INVOKE_ITEM" );
 static const activity_id ACT_LOCKPICK( "ACT_LOCKPICK" );
 static const activity_id ACT_LONGSALVAGE( "ACT_LONGSALVAGE" );
 static const activity_id ACT_MEDITATE( "ACT_MEDITATE" );
@@ -1820,7 +1821,7 @@ bool read_activity_actor::player_readma( avatar &you )
 
     if( one_in( difficulty ) ) {
         // learn martial art
-        mart_iter->second.call( &you, *book, false, you.pos() );
+        mart_iter->second.call( &you, *book, you.pos() );
         return true;
     } else if( continuous ) {
         switch( rng( 1, 5 ) ) {
@@ -3217,7 +3218,7 @@ bool craft_activity_actor::check_if_craft_okay( item_location &craft_item, Chara
     item *craft = craft_item.get_item();
 
     // item_location::get_item() will return nullptr if the item is lost
-    if( !craft ) {
+    if( !craft || square_dist( craft_item.pos_bub(), crafter.pos_bub() ) > 1 ) {
         crafter.add_msg_player_or_npc(
             _( "You no longer have the in progress craft in your possession.  "
                "You stop crafting.  "
@@ -3247,6 +3248,8 @@ void craft_activity_actor::start( player_activity &act, Character &crafter )
     cached_crafting_speed = 0;
     cached_workbench_multiplier = 0;
     use_cached_workbench_multiplier = false;
+    act.targets.clear();
+    act.targets.push_back( craft_item );
 }
 
 void craft_activity_actor::do_turn( player_activity &act, Character &crafter )
@@ -5042,18 +5045,14 @@ void reel_cable_activity_actor::start( player_activity &act, Character & )
 
 void reel_cable_activity_actor::finish( player_activity &act, Character &who )
 {
-    cable->active = false;
-    cable->charges = cable->link->max_length;
-    cable->link.reset();
-    if( parent_item ) {
-        parent_item->contents_linked = false;
-        who.add_msg_if_player( m_info, string_format( _( "You gather the cable up with the %s." ),
-                               parent_item->label( 1 ) ) );
-    } else {
-        who.add_msg_if_player( m_info, string_format( _( "You reel in the %s and wind it up." ),
-                               cable->label( 1 ) ) );
-    }
-    if( cable->has_flag( flag_AUTO_DELETE_CABLE ) ) {
+    cable->link->length = 0;
+    cable->link->s_state = link_state::no_link;
+    cable->link->t_state = link_state::no_link;
+    cable->reset_link( &who, -2 );
+    who.add_msg_if_player( m_info,
+                           string_format( cable->has_flag( flag_CABLE_SPOOL ) ? _( "You reel in the %s and wind it up." ) :
+                                          _( "You reel in the %s's cable and wind it up." ), cable->type_name() ) );
+    if( cable->has_flag( flag_NO_DROP ) ) {
         cable.remove_item();
     }
     act.set_to_null();
@@ -5064,17 +5063,15 @@ void reel_cable_activity_actor::serialize( JsonOut &jsout ) const
     jsout.start_object();
     jsout.member( "moves_total", moves_total );
     jsout.member( "cable", cable );
-    jsout.member( "parent_item", parent_item );
     jsout.end_object();
 }
 
 std::unique_ptr<activity_actor> reel_cable_activity_actor::deserialize( JsonValue &jsin )
 {
-    reel_cable_activity_actor actor( 0, {}, {} );
+    reel_cable_activity_actor actor( 0, {} );
     JsonObject data = jsin.get_object();
     data.read( "moves_total", actor.moves_total );
     data.read( "cable", actor.cable );
-    data.read( "parent_item", actor.parent_item );
 
     return actor.clone();
 }
@@ -5666,6 +5663,41 @@ std::unique_ptr<activity_actor> wear_activity_actor::deserialize( JsonValue &jsi
     data.read( "target_items", actor.target_items );
     data.read( "quantities", actor.quantities );
     data.read( "handler", actor.handler );
+
+    return actor.clone();
+}
+
+void invoke_item_activity_actor::do_turn( player_activity &, Character &who )
+{
+    item_location _item = item;
+    std::string _method = method;
+    if( method.empty() ) {
+        who.cancel_activity();
+        who.invoke_item( _item.get_item() );
+        return;
+    }
+    who.cancel_activity();
+    who.invoke_item( _item.get_item(), _method );
+}
+
+void invoke_item_activity_actor::serialize( JsonOut &jsout ) const
+{
+    jsout.start_object();
+
+    jsout.member( "item", item );
+    jsout.member( "method", method );
+
+    jsout.end_object();
+}
+
+std::unique_ptr<activity_actor> invoke_item_activity_actor::deserialize( JsonValue &jsin )
+{
+    invoke_item_activity_actor actor( {}, {} );
+
+    JsonObject data = jsin.get_object();
+
+    data.read( "item", actor.item );
+    data.read( "method", actor.method );
 
     return actor.clone();
 }
@@ -7187,6 +7219,7 @@ deserialize_functions = {
     { ACT_HARVEST, &harvest_activity_actor::deserialize},
     { ACT_HOTWIRE_CAR, &hotwire_car_activity_actor::deserialize },
     { ACT_INSERT_ITEM, &insert_item_activity_actor::deserialize },
+    { ACT_INVOKE_ITEM, &invoke_item_activity_actor::deserialize },
     { ACT_LOCKPICK, &lockpick_activity_actor::deserialize },
     { ACT_LONGSALVAGE, &longsalvage_activity_actor::deserialize },
     { ACT_MEDITATE, &meditate_activity_actor::deserialize },

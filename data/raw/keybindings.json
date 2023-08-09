@@ -1579,6 +1579,20 @@
   },
   {
     "type": "keybinding",
+    "id": "RANDOMIZE_SCENARIO_START_OF_CATACLYSM",
+    "category": "NEW_CHAR_SCENARIOS",
+    "name": "Randomize cataclysm start date",
+    "bindings": [ { "input_method": "keyboard_char", "key": "^" }, { "input_method": "keyboard_code", "key": "6", "mod": [ "shift" ] } ]
+  },
+  {
+    "type": "keybinding",
+    "id": "RANDOMIZE_SCENARIO_START_OF_GAME",
+    "category": "NEW_CHAR_SCENARIOS",
+    "name": "Randomize game start date",
+    "bindings": [ { "input_method": "keyboard_char", "key": "&" }, { "input_method": "keyboard_code", "key": "7", "mod": [ "shift" ] } ]
+  },
+  {
+    "type": "keybinding",
     "id": "SORT",
     "category": "NEW_CHAR_SCENARIOS",
     "name": "Toggle sorting order",
@@ -1658,13 +1672,6 @@
     "category": "APP_INTERACT",
     "name": "Plug in appliance",
     "bindings": [ { "input_method": "keyboard_any", "key": "g" } ]
-  },
-  {
-    "type": "keybinding",
-    "id": "UNPLUG",
-    "category": "APP_INTERACT",
-    "name": "Unplug power connections",
-    "bindings": [ { "input_method": "keyboard_any", "key": "u" } ]
   },
   {
     "type": "keybinding",
@@ -3950,7 +3957,7 @@
     "type": "keybinding",
     "id": "QUIT",
     "category": "YESNOQUIT",
-    "name": "Quit",
+    "name": "Cancel",
     "bindings": [
       { "input_method": "keyboard_char", "key": "Q" },
       { "input_method": "keyboard_code", "key": "q", "mod": [ "shift" ] },

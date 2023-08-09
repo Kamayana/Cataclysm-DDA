@@ -80,11 +80,13 @@ static const activity_id ACT_MULTIPLE_BUTCHER( "ACT_MULTIPLE_BUTCHER" );
 static const activity_id ACT_MULTIPLE_CHOP_PLANKS( "ACT_MULTIPLE_CHOP_PLANKS" );
 static const activity_id ACT_MULTIPLE_CHOP_TREES( "ACT_MULTIPLE_CHOP_TREES" );
 static const activity_id ACT_MULTIPLE_CONSTRUCTION( "ACT_MULTIPLE_CONSTRUCTION" );
+static const activity_id ACT_MULTIPLE_CRAFT( "ACT_MULTIPLE_CRAFT" );
 static const activity_id ACT_MULTIPLE_DIS( "ACT_MULTIPLE_DIS" );
 static const activity_id ACT_MULTIPLE_FARM( "ACT_MULTIPLE_FARM" );
 static const activity_id ACT_MULTIPLE_FISH( "ACT_MULTIPLE_FISH" );
 static const activity_id ACT_MULTIPLE_MINE( "ACT_MULTIPLE_MINE" );
 static const activity_id ACT_MULTIPLE_MOP( "ACT_MULTIPLE_MOP" );
+static const activity_id ACT_MULTIPLE_READ( "ACT_MULTIPLE_READ" );
 static const activity_id ACT_PICKAXE( "ACT_PICKAXE" );
 static const activity_id ACT_TIDY_UP( "ACT_TIDY_UP" );
 static const activity_id ACT_VEHICLE( "ACT_VEHICLE" );
@@ -1219,6 +1221,19 @@ static activity_reason_info can_do_activity_there( const activity_id &act, Chara
         }
         return activity_reason_info::fail( do_activity_reason::NO_ZONE );
     }
+    if( act == ACT_MULTIPLE_READ ) {
+        const item_filter filter = [ &you ]( const item & i ) {
+            // Check well lit after
+            read_condition_result condition = you.check_read_condition( i );
+            return condition == read_condition_result::SUCCESS ||
+                   condition == read_condition_result::TOO_DARK;
+        };
+        if( !you.items_with( filter ).empty() ) {
+            return activity_reason_info::ok( do_activity_reason::NEEDS_BOOK_TO_LEARN );
+        }
+        // TODO: find books from zone?
+        return activity_reason_info::fail( do_activity_reason::ALREADY_DONE );
+    }
     if( act == ACT_MULTIPLE_CHOP_PLANKS ) {
         //are there even any logs there?
         for( item &i : here.i_at( src_loc ) ) {
@@ -1337,10 +1352,32 @@ static activity_reason_info can_do_activity_there( const activity_id &act, Chara
         // 1. before we even assign the fetch activity and;
         // 2. when we form the src_set to loop through at the beginning of the fetch activity.
         return activity_reason_info::ok( do_activity_reason::CAN_DO_FETCH );
+    } else if( act == ACT_MULTIPLE_CRAFT ) {
+        // only npc is supported
+        npc *p = you.as_npc();
+        if( p ) {
+            item_location to_craft = p->get_item_to_craft();
+            if( to_craft && to_craft->is_craft() ) {
+                const inventory &inv = you.crafting_inventory( src_loc.raw(), PICKUP_RANGE - 1, false );
+                const recipe &r = to_craft->get_making();
+                std::vector<std::vector<item_comp>> item_comp_vector =
+                                                     to_craft->get_continue_reqs().get_components();
+                std::vector<std::vector<quality_requirement>> quality_comp_vector =
+                            r.simple_requirements().get_qualities();
+                std::vector<std::vector<tool_comp>> tool_comp_vector = r.simple_requirements().get_tools();
+                requirement_data req = requirement_data( tool_comp_vector, quality_comp_vector, item_comp_vector );
+                if( req.can_make_with_inventory( inv, is_crafting_component ) ) {
+                    return activity_reason_info::ok( do_activity_reason::NEEDS_CRAFT );
+                } else {
+                    return activity_reason_info( do_activity_reason::NEEDS_CRAFT, false, req );
+                }
+            }
+        }
+        return activity_reason_info::fail( do_activity_reason::ALREADY_DONE );
     } else if( act == ACT_MULTIPLE_DIS ) {
         // Is there anything to be disassembled?
         // TODO: fix point types
-        const inventory inv = you.crafting_inventory( src_loc.raw(), PICKUP_RANGE - 1, false );
+        const inventory &inv = you.crafting_inventory( src_loc.raw(), PICKUP_RANGE - 1, false );
         requirement_data req;
         for( item &i : here.i_at( src_loc ) ) {
             // Skip items marked by other ppl.
@@ -2503,6 +2540,15 @@ static std::unordered_set<tripoint_abs_ms> generic_multi_activity_locations(
                 }
             }
         }
+    } else if( act_id == ACT_MULTIPLE_READ ) {
+        // anywhere well lit
+        for( const tripoint_bub_ms &elem : here.points_in_radius( localpos, ACTIVITY_SEARCH_DISTANCE ) ) {
+            src_set.insert( here.getglobal( elem ) );
+        }
+    } else if( act_id == ACT_MULTIPLE_CRAFT ) {
+        // Craft only with what is on the spot
+        // TODO: add zone type like zone_type_CRAFT?
+        src_set.insert( here.getglobal( localpos ) );
     } else if( act_id != ACT_FETCH_REQUIRED ) {
         zone_type_id zone_type = get_zone_for_act( tripoint_bub_ms{}, mgr, act_id, _fac_id( you ) );
         src_set = mgr.get_near( zone_type, abspos, ACTIVITY_SEARCH_DISTANCE, nullptr, _fac_id( you ) );
@@ -2656,6 +2702,7 @@ static requirement_check_result generic_multi_activity_check_requirement(
                reason == do_activity_reason::NEEDS_VEH_REPAIR ||
                reason == do_activity_reason::NEEDS_TREE_CHOPPING ||
                reason == do_activity_reason::NEEDS_FISHING || reason == do_activity_reason::NEEDS_MINING ||
+               reason == do_activity_reason::NEEDS_CRAFT ||
                reason == do_activity_reason::NEEDS_DISASSEMBLE ) {
         // we can do it, but we need to fetch some stuff first
         // before we set the task to fetch components - is it even worth it? are the components anywhere?
@@ -2717,7 +2764,9 @@ static requirement_check_result generic_multi_activity_check_requirement(
                    reason == do_activity_reason::NEEDS_BUTCHERING ||
                    reason == do_activity_reason::NEEDS_BIG_BUTCHERING ||
                    reason == do_activity_reason::NEEDS_TREE_CHOPPING ||
-                   reason == do_activity_reason::NEEDS_FISHING || reason == do_activity_reason::NEEDS_DISASSEMBLE ) {
+                   reason == do_activity_reason::NEEDS_FISHING ||
+                   reason == do_activity_reason::NEEDS_CRAFT ||
+                   reason == do_activity_reason::NEEDS_DISASSEMBLE ) {
             std::vector<std::vector<item_comp>> requirement_comp_vector;
             std::vector<std::vector<quality_requirement>> quality_comp_vector;
             std::vector<std::vector<tool_comp>> tool_comp_vector;
@@ -2741,6 +2790,10 @@ static requirement_check_result generic_multi_activity_check_requirement(
 
             } else if( reason == do_activity_reason::NEEDS_FISHING ) {
                 quality_comp_vector.push_back( std::vector<quality_requirement> {quality_requirement( qual_FISHING_ROD, 1, 1 )} );
+            } else if( reason == do_activity_reason::NEEDS_CRAFT ) {
+                requirement_comp_vector = act_info.req.get_components();
+                quality_comp_vector = act_info.req.get_qualities();
+                tool_comp_vector = act_info.req.get_tools();
             } else if( reason == do_activity_reason::NEEDS_DISASSEMBLE ) {
                 quality_comp_vector = act_info.req.get_qualities();
                 tool_comp_vector = act_info.req.get_tools();
@@ -2777,6 +2830,14 @@ static requirement_check_result generic_multi_activity_check_requirement(
             return requirement_check_result::SKIP_LOCATION;
         } else {
             if( !check_only ) {
+                if( you.as_npc() && you.as_npc()->job.fetch_history.count( what_we_need.str() ) != 0 &&
+                    you.as_npc()->job.fetch_history[what_we_need.str()] == calendar::turn ) {
+                    // this may be faild fetch already. give up task for a while to avoid infinite loop.
+                    you.activity = player_activity();
+                    you.backlog.clear();
+                    check_npc_revert( you );
+                    return requirement_check_result::SKIP_LOCATION;
+                }
                 you.backlog.emplace_front( act_id );
                 you.assign_activity( ACT_FETCH_REQUIRED );
                 player_activity &act_prev = you.backlog.front();
@@ -2876,6 +2937,20 @@ static bool generic_multi_activity_do(
             you.backlog.emplace_front( act_id );
             return false;
         }
+    } else if( reason == do_activity_reason::NEEDS_BOOK_TO_LEARN ) {
+        const item_filter filter = [ &you ]( const item & i ) {
+            read_condition_result condition = you.check_read_condition( i );
+            return condition == read_condition_result::SUCCESS;
+        };
+        std::vector<item *> books = you.items_with( filter );
+        if( !books.empty() && books[0] ) {
+            const time_duration time_taken = you.time_to_read( *books[0], you );
+            item_location book = item_location( you, books[0] );
+            item_location ereader;
+            you.backlog.emplace_front( act_id );
+            you.assign_activity( read_activity_actor( time_taken, book, ereader, true ) );
+            return false;
+        }
     } else if( reason == do_activity_reason::CAN_DO_CONSTRUCTION ) {
         if( here.partial_con_at( src_loc ) ) {
             you.backlog.emplace_front( act_id );
@@ -2940,6 +3015,20 @@ static bool generic_multi_activity_do(
         }
 
         you.activity_vehicle_part_index = -1;
+    } else if( reason == do_activity_reason::NEEDS_CRAFT ) {
+        // only npc is supported
+        npc *p = you.as_npc();
+        if( p ) {
+            item_location to_craft = p->get_item_to_craft();
+            if( to_craft && to_craft->is_craft() &&
+                you.lighting_craft_speed_multiplier( to_craft->get_making() ) > 0 ) {
+                player_activity act = player_activity( craft_activity_actor( to_craft, false ) );
+                you.assign_activity( act );
+                you.backlog.emplace_front( ACT_MULTIPLE_CRAFT );
+                you.backlog.front().auto_resume = true;
+                return false;
+            }
+        }
     } else if( reason == do_activity_reason::NEEDS_DISASSEMBLE ) {
         map_stack items = here.i_at( src_loc );
         for( item &elem : items ) {
@@ -2994,6 +3083,13 @@ bool generic_multi_activity_handler( player_activity &act, Character &you, bool 
     // may cause infinite loop if something goes wrong
     // Maybe it makes more harm than good? I don't know.
     if( activity_to_restore == activity_id( ACT_FETCH_REQUIRED ) && src_sorted.empty() ) {
+        // remind what you failed to fetch
+        if( !check_only && !you.backlog.empty() ) {
+            player_activity &act_prev = you.backlog.front();
+            if( !act_prev.str_values.empty() && you.as_npc() ) {
+                you.as_npc()->job.fetch_history[act_prev.str_values.back()] = calendar::turn;
+            }
+        }
         return true;
     }
     for( const tripoint_abs_ms &src : src_sorted ) {
@@ -3027,7 +3123,7 @@ bool generic_multi_activity_handler( player_activity &act, Character &you, bool 
             return true;
         }
         std::vector<tripoint_bub_ms> route_workbench;
-        if( activity_to_restore == activity_id( ACT_MULTIPLE_DIS ) ) {
+        if( activity_to_restore == ACT_MULTIPLE_CRAFT || activity_to_restore == ACT_MULTIPLE_DIS ) {
             // returns empty vector if we can't reach best tile
             // or we are already on the best tile
             route_workbench = route_best_workbench( you, src_loc );
@@ -3036,7 +3132,7 @@ bool generic_multi_activity_handler( player_activity &act, Character &you, bool 
         if( square_dist( you.pos_bub(), src_loc ) > 1 || !route_workbench.empty() ) {
             std::vector<tripoint_bub_ms> route;
             // find best workbench if possible
-            if( activity_to_restore == activity_id( ACT_MULTIPLE_DIS ) ) {
+            if( !route_workbench.empty() ) {
                 route = route_workbench;
             } else {
                 route = route_adjacent( you, src_loc );
