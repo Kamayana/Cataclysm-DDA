@@ -4974,6 +4974,18 @@ item &map::add_item_or_charges( const tripoint &pos, item obj, int &copies_remai
     return *_add_item_or_charges( pos, std::move( obj ), copies_remaining, overflow ).first;
 }
 
+item &map::add_item_or_charges( const tripoint_bub_ms &pos, item obj, bool overflow )
+{
+    int copies = 1;
+    return *_add_item_or_charges( pos.raw(), std::move( obj ), copies, overflow ).first;
+}
+
+item &map::add_item_or_charges( const tripoint_bub_ms &pos, item obj, int &copies_remaining,
+    bool overflow )
+{
+    return *_add_item_or_charges( pos.raw(), std::move( obj ), copies_remaining, overflow ).first;
+}
+
 std::pair<item *, tripoint> map::_add_item_or_charges( const tripoint &pos, item obj,
         int &copies_remaining, bool overflow )
 {
@@ -5088,17 +5100,6 @@ std::pair<item *, tripoint> map::_add_item_or_charges( const tripoint &pos, item
 
     // If first_added has no value, no items were added due to lack of space at target tile (+/- overflow tiles)
     return first_added ? first_added.value() : std::make_pair( &null_item_reference(), tripoint_min );
-}
-
-item &map::add_item_or_charges( const tripoint_bub_ms &pos, item obj, bool overflow )
-{
-    return add_item_or_charges( pos.raw(), std::move( obj ), overflow );
-}
-
-item &map::add_item_or_charges( const tripoint_bub_ms &pos, item obj, int &copies_remaining,
-                                bool overflow )
-{
-    return add_item_or_charges( pos.raw(), std::move( obj ), copies_remaining, overflow );
 }
 
 float map::item_category_spawn_rate( const item &itm )
