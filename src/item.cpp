@@ -13510,7 +13510,7 @@ bool item::process( map &here, Character *carrier, const tripoint &pos, float in
 
 bool item::leak( map &here, Character *carrier, const tripoint &pos, item_pocket *pocke )
 {
-    if( is_container() ) {
+    if( is_container() ) {// TODOkama
         contents.leak( here, carrier, pos, pocke );
         return false;
     } else if( this->made_of( phase_id::LIQUID ) && !this->is_frozen_liquid() ) {

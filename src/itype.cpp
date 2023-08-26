@@ -211,7 +211,7 @@ std::optional<int> itype::invoke( Character *p, item &it, const tripoint &pos,
         return 0;
     }
     if( p ) {
-        p->invalidate_weight_carried_cache();
+        p->invalidate_weight_carried_cache();// TODOkama
 
         const auto ret = use->can_call( *p, it, pos );
 

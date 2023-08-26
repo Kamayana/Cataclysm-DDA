@@ -2978,6 +2978,7 @@ units::mass Character::weight_carried() const
 
 void Character::invalidate_weight_carried_cache()
 {
+    add_msg( colorize( "invalidate_weight", c_red ) ); // TODOkama
     cached_weight_carried = std::nullopt;
 }
 
