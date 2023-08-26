@@ -89,6 +89,7 @@ class item_location::impl
             return nullptr;
         }
         virtual tripoint position() const = 0;
+        virtual Character *carrier() const = 0;
         virtual std::string describe( const Character * ) const = 0;
         virtual item_location obtain( Character &, int ) = 0;
         virtual units::volume volume_capacity() const = 0;
@@ -141,6 +142,11 @@ class item_location::impl::nowhere : public item_location::impl
         tripoint position() const override {
             debugmsg( "invalid use of nowhere item_location" );
             return tripoint_min;
+        }
+
+        Character *carrier() const override {
+            debugmsg( "invalid use of nowhere item_location" );
+            return nullptr;
         }
 
         std::string describe( const Character * ) const override {
@@ -216,6 +222,10 @@ class item_location::impl::item_on_map : public item_location::impl
 
         tripoint position() const override {
             return cur.pos();
+        }
+
+        Character *carrier() const override {
+            return nullptr;
         }
 
         std::string describe( const Character *ch ) const override {
@@ -343,6 +353,13 @@ class item_location::impl::item_on_person : public item_location::impl
             return who->pos();
         }
 
+        Character *carrier() const override {
+            if( !ensure_who_unpacked() ) {
+                return nullptr;
+            }
+            return who;
+        }
+
         std::string describe( const Character *ch ) const override {
             if( !target() || !ensure_who_unpacked() ) {
                 return std::string();
@@ -467,6 +484,10 @@ class item_location::impl::item_on_vehicle : public item_location::impl
 
         tripoint position() const override {
             return cur.veh.global_part_pos3( cur.part );
+        }
+
+        Character *carrier() const override {
+            return nullptr;
         }
 
         std::string describe( const Character *ch ) const override {
@@ -613,6 +634,10 @@ class item_location::impl::item_in_container : public item_location::impl
             }
         }
 
+        Character *carrier() const override {
+            return container.carrier();
+        }
+
         std::string describe( const Character * ) const override {
             if( !target() ) {
                 return std::string();
@@ -633,9 +658,7 @@ class item_location::impl::item_in_container : public item_location::impl
         }
 
         void remove_item() override {
-            Character *carrier = where_recursive() != type::character ? nullptr :
-                                 get_creature_tracker().creature_at<Character>( position() );
-            container->remove_item( *target(), carrier );
+            container->remove_item( *target(), carrier() );
             container->on_contents_changed();
         }
 
@@ -648,7 +671,7 @@ class item_location::impl::item_in_container : public item_location::impl
             ch.mod_moves( -obtain_cost( ch, qty ) );
 
             on_contents_changed();
-            if( container.held_by( ch ) ) {
+            if( container.is_carried_by( ch ) ) {
                 // we don't need to move it in this case, it's in a pocket
                 // we just charge the obtain cost and leave it in place. otherwise
                 // it's liable to end up back in the same pocket, where shenanigans ensue
@@ -1065,15 +1088,14 @@ void item_location::set_should_stack( bool should_stack ) const
     ptr->should_stack = should_stack;
 }
 
-bool item_location::held_by( Character const &who ) const
+Character *item_location::carrier() const
 {
-    if( where() == type::character &&
-        get_creature_tracker().creature_at<Character>( position() ) == &who ) {
-        return true;
-    } else if( has_parent() ) {
-        return parent_item().held_by( who );
-    }
-    return false;
+    return ptr->carrier();
+}
+
+bool item_location::is_carried_by( Character const &who ) const
+{
+    return carrier() == &who;
 }
 
 units::volume item_location::volume_capacity() const

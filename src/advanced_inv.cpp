@@ -903,7 +903,7 @@ bool advanced_inventory::move_all_items()
 
     // Check some preconditions to quickly leave the function.
     if( spane.get_area() == AIM_CONTAINER && dpane.get_area() == AIM_INVENTORY ) {
-        if( spane.container.held_by( player_character ) ) {
+        if( spane.container.is_carried_by( player_character ) ) {
             // TODO: Implement this, distributing the contents to other inventory pockets.
             popup_getkey( _( "You already have everything in that container." ) );
             return false;
@@ -1424,7 +1424,7 @@ bool advanced_inventory::action_move_item( advanced_inv_listitem *sitem,
     recalc = true;
     cata_assert( amount_to_move > 0 );
     if( srcarea == AIM_CONTAINER && destarea == AIM_INVENTORY &&
-        spane.container.held_by( player_character ) ) {
+        spane.container.is_carried_by( player_character ) ) {
         popup_getkey( _( "The %s is already in your inventory." ), sitem->items.front()->tname() );
 
     } else if( srcarea == AIM_INVENTORY && destarea == AIM_WORN ) {

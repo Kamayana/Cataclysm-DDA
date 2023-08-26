@@ -11379,7 +11379,7 @@ bool item::reload( Character &u, item_location ammo, int qty )
         return false;
     }
 
-    bool ammo_from_map = !ammo.held_by( u );
+    bool ammo_from_map = !ammo.is_carried_by( u );
     if( ammo->has_flag( flag_SPEEDLOADER ) || ammo->has_flag( flag_SPEEDLOADER_CLIP ) ) {
         // if the thing passed in is a speed loader, we want the ammo
         ammo = item_location( ammo, &ammo->first_ammo() );
