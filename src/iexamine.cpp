@@ -4016,7 +4016,7 @@ void iexamine::tree_maple( Character &you, const tripoint &examp )
 
     you.mod_moves( -to_moves<int>( 20_seconds ) );
     here.ter_set( examp, t_tree_maple_tapped );
-    here.add_item_or_charges( examp, *spile, false );
+    here.add_drop_from_character( you, *spile, examp, false );
     spile_loc.remove_item();
     add_msg( m_info, _( "You drill the maple tree crust and tap a %s into the prepared hole." ),
              spile_name );
@@ -4025,7 +4025,7 @@ void iexamine::tree_maple( Character &you, const tripoint &examp )
 
     item *container = cont_loc.get_item();
     if( container ) {
-        here.add_item_or_charges( examp, *container, false );
+        here.add_drop_from_character( you, *container, examp, false );
         add_msg( m_info, _( "You hang the %s under the %s to collect sap." ), container->tname(),
                  spile_name );
         cont_loc.remove_item();
@@ -4111,7 +4111,7 @@ void iexamine::tree_maple_tapped( Character &you, const tripoint &examp )
 
             container = cont_loc.get_item();
             if( container ) {
-                here.add_item_or_charges( examp, *container, false );
+                here.add_drop_from_character( you, *container, examp, false );
                 you.mod_moves( -you.item_handling_cost( *container ) );
                 add_msg( m_info, _( "You hang the %s under the spile to collect sap." ), container->tname() );
                 cont_loc.remove_item();

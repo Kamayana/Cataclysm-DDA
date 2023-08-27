@@ -1281,12 +1281,11 @@ class map
          *  @param pos Where to add item
          *  @param obj Item to add
          *  @param copies_remaining Number of identical copies of the item to create
-         *  @param overflow if destination is full attempt to drop on adjacent tiles
+         *  @param overflow If destination is full, attempt to drop on adjacent tiles
          *  @return reference to dropped (and possibly stacked) item or null item on failure
          *  @warning function is relatively expensive and meant for user initiated actions, not mapgen
+         *  TODO: fix point types (remove the first overload)
          */
-        // TODO: fix point types (remove the first overload)
-        item_location add_item_ret_loc( const tripoint &pos, item obj, bool overflow = true );
         item &add_item_or_charges( const tripoint &pos, item obj, bool overflow = true );
         item &add_item_or_charges( const tripoint &pos, item obj, int &copies_remaining,
                                    bool overflow = true );
@@ -1296,6 +1295,19 @@ class map
         item &add_item_or_charges( const point &p, const item &obj, bool overflow = true ) {
             return add_item_or_charges( tripoint( p, abs_sub.z() ), obj, overflow );
         }
+        item_location add_item_ret_loc( const tripoint &pos, item obj, bool overflow = true );
+
+        /**
+         *  @brief Adds an item to map tile or stacks charges, with a character as the source of the item.
+         *  @brief Does NOT remove items from the character's inventory.
+         *  @param dropper The character the item came from
+         *  @param obj Item to add
+         *  @param pos Where to add item. Defaults to the dropper's position
+         *  @param overflow If destination is full, attempt to drop on adjacent tiles
+         *  @return reference to dropped (and possibly stacked) item or null item on failure
+         *  @warning function is relatively expensive and meant for user initiated actions, not mapgen
+         *  TODO: fix point types (remove the first overload)
+         */
         item &add_drop_from_character( Character &dropper, item obj,
                                        const tripoint pos = tripoint_min, bool overflow = true );
     private:

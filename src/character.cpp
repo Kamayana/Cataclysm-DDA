@@ -11911,7 +11911,7 @@ void Character::leak_items()
         }
     } else if( weapon.made_of( phase_id::LIQUID ) ) {
         if( weapon.leak( get_map(), this, pos() ) ) {
-            get_map().add_item_or_charges( pos(), weapon );
+            get_map().add_drop_from_character( *this, weapon );
             removed_items.emplace_back( *this, &weapon );
             add_msg_if_player( m_warning, _( "%s spilled from your hand." ), weapon.tname() );
         }

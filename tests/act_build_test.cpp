@@ -85,8 +85,8 @@ construction setup_testcase( Character &u, std::string const &constr,
     for( auto const *cons : constructions_by_group( build.group ) ) {
         for( auto const &comp : cons->requirements->get_components() ) {
             for( int i = 0; i < comp.front().count; i++ ) {
-                here.add_item_or_charges( loot_loc, item( comp.front().type, calendar::turn, 1 ),
-                                          false );
+                here.add_drop_from_character( u, item( comp.front().type, calendar::turn, 1 ),
+                                              loot_loc.raw(), false );
             }
         }
     }

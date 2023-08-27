@@ -483,7 +483,7 @@ std::optional<int> unpack_actor::use( Character *p, item &it, const tripoint & )
             content.set_flag( flag_FILTHY );
         }
 
-        here.add_item_or_charges( p->pos(), content );
+        here.add_drop_from_character( *p, content );
     }
 
     p->i_rem( &it );
@@ -1690,7 +1690,7 @@ void salvage_actor::cut_up( Character &p, item_location &cut ) const
                 p.i_add_or_drop( result, amount );
             } else {
                 for( int i = 0; i < amount; i++ ) {
-                    here.add_item_or_charges( pos, result );
+                    here.add_drop_from_character( p, result, pos );
                 }
             }
         } else {

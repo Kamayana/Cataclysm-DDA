@@ -1589,7 +1589,7 @@ void talk_function::field_plant( npc &p, const std::string &place )
                 used_seed = player_character.use_amount( seed_id, 1 );
             }
             used_seed.front().set_age( 0_turns );
-            bay.add_item_or_charges( plot, used_seed.front() );
+            bay.add_drop_from_character( player_character, used_seed.front(), plot );
             bay.set( plot, t_dirt, f_plant_seed );
             limiting_number--;
         }
@@ -2430,7 +2430,7 @@ void talk_function::companion_return( npc &comp )
     for( size_t i = 0; i < comp.companion_mission_inv.size(); i++ ) {
         for( const item &it : comp.companion_mission_inv.const_stack( i ) ) {
             if( !it.count_by_charges() || it.charges > 0 ) {
-                here.add_item_or_charges( player_character.pos(), it );
+                here.add_drop_from_character( comp, it, player_character.pos() );
             }
         }
     }

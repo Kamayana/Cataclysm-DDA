@@ -1539,10 +1539,10 @@ static void unroll_digging( const int numer_of_2x4s )
     // refund components!
     item rope( "rope_30" );
     map &here = get_map();
-    tripoint avatar_pos = get_player_character().pos();
-    here.add_item_or_charges( avatar_pos, rope );
+    Character &avatar = get_player_character();
+    here.add_drop_from_character( avatar, rope );
     // presuming 2x4 to conserve lumber.
-    here.spawn_item( avatar_pos, itype_2x4, numer_of_2x4s );
+    here.spawn_item( avatar.pos(), itype_2x4, numer_of_2x4s );
 }
 
 void construct::done_digormine_stair( const tripoint_bub_ms &p, bool dig,

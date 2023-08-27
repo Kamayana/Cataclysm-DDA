@@ -2209,7 +2209,7 @@ class exosuit_interact
                 } else if( ret == 0 ) {
                     // Unload existing module
                     pkt->remove_items_if( [&c, &here]( const item & i ) {
-                        here.add_item_or_charges( c.pos(), i );
+                        here.add_drop_from_character( c, i );
                         return true;
                     } );
                     return to_moves<int>( 5_seconds );
@@ -2270,7 +2270,7 @@ class exosuit_interact
             // Unload existing module
             if( not_empty ) {
                 pkt->remove_items_if( [&c, &here]( const item & i ) {
-                    here.add_item_or_charges( c.pos(), i );
+                    here.add_drop_from_character( c, i );
                     return true;
                 } );
                 moves += to_moves<int>( 5_seconds );

@@ -418,7 +418,7 @@ bool perform_liquid_transfer( item &liquid, const tripoint *const source_pos,
                 if( target.dest_opt == LD_KEG ) {
                     iexamine::pour_into_keg( target.pos, liquid );
                 } else {
-                    here.add_item_or_charges( target.pos, liquid );
+                    here.add_drop_from_character( player_character, liquid, target.pos );
                     liquid.charges = 0;
                 }
                 player_character.mod_moves( -100 );

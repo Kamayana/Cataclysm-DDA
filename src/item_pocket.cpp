@@ -1760,7 +1760,6 @@ static void move_to_parent_pocket_recursive( const tripoint &pos, item &it,
     if( carrier ) {
         carrier->add_msg_player_or_npc( m_bad, _( "Your %s falls to the ground." ),
                                         _( "<npcname>'s %s falls to the ground." ), it.display_name() );
-
         here.add_drop_from_character( *carrier, it, pos );
     } else {
         add_msg_if_player_sees( pos, m_bad, _( "The %s falls to the ground." ), it.display_name() );
@@ -1976,8 +1975,7 @@ void item_pocket::leak( map &here, Character *carrier, const tripoint &pos,
                 pocke->add( *it );
             } else {
                 iter->unset_flag( flag_FROM_FROZEN_LIQUID );
-                iter->on_drop( pos, carrier );
-                here.add_item_or_charges( pos, *iter );
+                here.add_drop_from_character( *carrier, *iter, pos );
                 carrier->add_msg_if_player( _( "Liquid leaked out from the %s and dripped onto the ground!" ),
                                             this->get_name() );
             }

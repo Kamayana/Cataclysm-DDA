@@ -221,7 +221,7 @@ const weakpoint *Character::absorb_hit( const weakpoint_attack &, const bodypart
     }
     map &here = get_map();
     for( item &remain : worn_remains ) {
-        here.add_item_or_charges( pos(), remain );
+        here.add_drop_from_character( *this, remain );
     }
     if( armor_destroyed ) {
         drop_invalid_inventory();

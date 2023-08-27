@@ -136,8 +136,8 @@ void Character::try_remove_heavysnare()
                                    _( "<npcname> frees themselves from the heavy snare!" ) );
             item rope( "rope_6", calendar::turn );
             item snare( "snare_trigger", calendar::turn );
-            here.add_item_or_charges( pos(), rope );
-            here.add_item_or_charges( pos(), snare );
+            here.add_drop_from_character( *this, rope );
+            here.add_drop_from_character( *this, snare );
         } else {
             add_msg_if_player( m_bad,
                                _( "You try to free yourself from the heavy snare, but can't get loose!" ) );

@@ -1083,7 +1083,7 @@ static bool butchery_drops_harvest( item *corpse_item, const mtype &mt, Characte
             } else if( drop->count_by_charges() ) {
                 std::vector<item> objs = create_charge_items( drop, roll, entry, corpse_item, you );
                 for( item &obj : objs ) {
-                    here.add_item_or_charges( you.pos(), obj );
+                    here.add_drop_from_character( you, obj );
                 }
             } else {
                 item obj( drop, calendar::turn );
@@ -1104,7 +1104,7 @@ static bool butchery_drops_harvest( item *corpse_item, const mtype &mt, Characte
                     obj.set_var( "activity_var", you.name );
                 }
                 for( int i = 0; i != roll; ++i ) {
-                    here.add_item_or_charges( you.pos(), obj );
+                    here.add_drop_from_character( you, obj );
                 }
             }
             you.add_msg_if_player( m_good, _( "You harvest: %s" ), drop->nname( roll ) );
@@ -1144,7 +1144,7 @@ static bool butchery_drops_harvest( item *corpse_item, const mtype &mt, Characte
             if( !you.backlog.empty() && you.backlog.front().id() == ACT_MULTIPLE_BUTCHER ) {
                 ruined_parts.set_var( "activity_var", you.name );
             }
-            here.add_item_or_charges( you.pos(), ruined_parts );
+            here.add_drop_from_character( you, ruined_parts );
         }
     }
 
@@ -1168,7 +1168,7 @@ static bool butchery_drops_harvest( item *corpse_item, const mtype &mt, Characte
                 //~ %1$s - item name, %2$s - monster name
                 you.add_msg_if_player( m_good, _( "You discover a %1$s in the %2$s!" ), content->tname(),
                                        corpse_item->get_mtype()->nname() );
-                here.add_item_or_charges( you.pos(), *content );
+                here.add_drop_from_character( you, *content );
             } else if( content->is_bionic() ) {
                 here.spawn_item( you.pos(), itype_burnt_out_bionic, 1, 0, calendar::turn );
             }
@@ -1179,7 +1179,7 @@ static bool butchery_drops_harvest( item *corpse_item, const mtype &mt, Characte
     return true;
 }
 
-static void butchery_quarter( item *corpse_item, const Character &you )
+static void butchery_quarter( item *corpse_item, Character &you )
 {
     corpse_item->set_flag( flag_QUARTERED );
     you.add_msg_if_player( m_good,
@@ -1190,7 +1190,7 @@ static void butchery_quarter( item *corpse_item, const Character &you )
 
     // 4 quarters (one exists, add 3, flag does the rest)
     for( int i = 1; i <= 3; i++ ) {
-        here.add_item_or_charges( pos, *corpse_item );
+        here.add_drop_from_character( you, *corpse_item, pos );
     }
 }
 
@@ -1463,7 +1463,7 @@ void activity_handlers::fill_liquid_do_turn( player_activity *act, Character *yo
                 if( iexamine::has_keg( act_ref.coords.at( 1 ) ) ) {
                     iexamine::pour_into_keg( act_ref.coords.at( 1 ), liquid );
                 } else {
-                    here.add_item_or_charges( act_ref.coords.at( 1 ), liquid );
+                    here.add_drop_from_character( *you, liquid, act_ref.coords.at( 1 ) );
                     you->add_msg_if_player( _( "You pour %1$s onto the ground." ), liquid.tname() );
                     liquid.charges = 0;
                 }
@@ -1858,7 +1858,7 @@ void activity_handlers::start_fire_do_turn( player_activity *act, Character *you
                 tinder->charges--;
                 copy.charges = 1;
             }
-            here.add_item_or_charges( where, copy );
+            here.add_drop_from_character( *you, copy, where );
             if( !count_by_charges || tinder->charges <= 0 ) {
                 tinder.remove_item();
             }
@@ -3196,7 +3196,7 @@ void activity_handlers::plant_seed_finish( player_activity *act, Character *you 
             used_seed.front().erase_var( "activity_var" );
         }
         used_seed.front().set_flag( json_flag_HIDDEN_ITEM );
-        here.add_item_or_charges( examp, used_seed.front() );
+        here.add_drop_from_character( *you, used_seed.front(), examp );
         if( here.has_flag_furn( ter_furn_flag::TFLAG_PLANTABLE, examp ) ) {
             here.furn_set( examp, furn_str_id( here.furn( examp )->plant->transform ) );
         } else {

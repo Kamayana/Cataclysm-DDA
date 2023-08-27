@@ -115,7 +115,7 @@ void Character::handle_contents_changed( const std::vector<item_location> &conta
             item it_copy( *loc );
             loc.remove_item();
             // target item of `loc` is invalidated and should not be used from now on
-            m.add_item_or_charges( pos(), it_copy );
+            m.add_drop_from_character( *this, it_copy );
         }
     }
 }
@@ -608,7 +608,7 @@ void Character::drop_invalid_inventory()
         const item &it = stack->front();
         if( it.made_of( phase_id::LIQUID ) ) {
             dropped_liquid = true;
-            get_map().add_item_or_charges( pos(), it );
+            get_map().add_drop_from_character( *this, it );
             // must be last
             i_rem( &it );
         }

@@ -3930,11 +3930,11 @@ static void stash_on_pet( const std::list<item> &items, monster &pet, Character 
         if( it.volume() > remaining_volume ) {
             add_msg( m_bad, _( "%1$s did not fit and fell to the %2$s." ), it.display_name(),
                      here.name( pet.pos() ) );
-            here.add_item_or_charges( pet.pos(), it );
+            here.add_drop_from_character( who, it, pet.pos() );
         } else if( it.weight() > remaining_weight ) {
             add_msg( m_bad, _( "%1$s is too heavy and fell to the %2$s." ), it.display_name(),
                      here.name( pet.pos() ) );
-            here.add_item_or_charges( pet.pos(), it );
+            here.add_drop_from_character( who, it, pet.pos() );
         } else {
             pet.add_item( it );
             remaining_volume -= it.volume();
@@ -4392,7 +4392,7 @@ void reload_activity_actor::finish( player_activity &act, Character &who )
                 add_msg( m_neutral, _( "The %s no longer fits in your inventory so you drop it instead." ),
                          reloadable_name );
             }
-            get_map().add_item_or_charges( loc.position(), reloadable );
+            get_map().add_drop_from_character( who, reloadable, loc.position() );
             loc.remove_item();
             break;
     }
@@ -4972,7 +4972,7 @@ void tent_placement_activity_actor::finish( player_activity &act, Character &p )
 void tent_placement_activity_actor::canceled( player_activity &, Character &p )
 {
     map &here = get_map();
-    here.add_item_or_charges( p.pos() + target, it );
+    here.add_drop_from_character( p, it, p.pos() + target );
 }
 
 void tent_placement_activity_actor::serialize( JsonOut &jsout ) const
@@ -5782,17 +5782,17 @@ void chop_logs_activity_actor::finish( player_activity &act, Character &who )
     for( int i = 0; i != log_quan; ++i ) {
         item obj( itype_log, calendar::turn );
         obj.set_var( "activity_var", who.name );
-        here.add_item_or_charges( pos, obj );
+        here.add_drop_from_character( who, obj, pos );
     }
     for( int i = 0; i != stick_quan; ++i ) {
         item obj( itype_stick_long, calendar::turn );
         obj.set_var( "activity_var", who.name );
-        here.add_item_or_charges( pos, obj );
+        here.add_drop_from_character( who, obj, pos );
     }
     for( int i = 0; i != splint_quan; ++i ) {
         item obj( itype_splinter, calendar::turn );
         obj.set_var( "activity_var", who.name );
-        here.add_item_or_charges( pos, obj );
+        here.add_drop_from_character( who, obj, pos );
     }
     here.ter_set( pos, t_dirt );
     who.add_msg_if_player( m_good, _( "You finish chopping wood." ) );
@@ -6789,7 +6789,7 @@ void unload_loot_activity_actor::do_turn( player_activity &act, Character &you )
                                         vehicle_part &vp_this = this_veh->part( this_part );
                                         this_veh->add_item( vp_this, link );
                                     } else {
-                                        here.add_item_or_charges( src_loc, link );
+                                        here.add_drop_from_character( you, link, src_loc.raw() );
                                     }
                                 }
                             }
@@ -7084,7 +7084,7 @@ void vehicle_unfolding_activity_actor::finish( player_activity &act, Character &
 
 void vehicle_unfolding_activity_actor::canceled( player_activity &act, Character &p )
 {
-    get_map().add_item_or_charges( p.pos(), it );
+    get_map().add_drop_from_character( p, it );
     act.set_to_null();
 }
 

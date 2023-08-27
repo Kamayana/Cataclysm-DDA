@@ -46,7 +46,7 @@ static const itype_id itype_glass_shard( "glass_shard" );
 
 static const json_character_flag json_flag_HARDTOHIT( "HARDTOHIT" );
 
-static void drop_or_embed_projectile( const dealt_projectile_attack &attack )
+static void drop_or_embed_projectile( const dealt_projectile_attack &attack, Creature *attacker )
 {
     const projectile &proj = attack.proj;
     const item &drop_item = proj.get_drop();
@@ -80,7 +80,8 @@ static void drop_or_embed_projectile( const dealt_projectile_attack &attack )
         for( int i = 0; i < nb_of_dropped_shard; ++i ) {
             item shard( "glass_shard" );
             //actual dropping of shards
-            get_map().add_item_or_charges( pt, shard );
+            Character *attacker_char = attacker->as_character();
+            get_map().add_drop_from_character( *attacker_char, shard, pt );
         }
 
         return;
@@ -143,7 +144,8 @@ static void drop_or_embed_projectile( const dealt_projectile_attack &attack )
 
         map &here = get_map();
         if( do_drop ) {
-            here.add_item_or_charges( attack.end_point, dropped_item );
+            Character *attacker_char = attacker->as_character();
+            get_map().add_drop_from_character( *attacker_char, dropped_item, attack.end_point );
         }
 
         if( effects.count( "HEAVY_HIT" ) ) {
@@ -485,7 +487,7 @@ dealt_projectile_attack projectile_attack( const projectile &proj_arg, const tri
         tp = prev_point;
     }
 
-    drop_or_embed_projectile( attack );
+    drop_or_embed_projectile( attack, origin );
 
     apply_ammo_effects( null_source ? nullptr : origin, tp, proj.proj_effects );
     const explosion_data &expl = proj.get_custom_explosion();

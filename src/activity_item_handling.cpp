@@ -196,7 +196,7 @@ static bool handle_spillable_contents( Character &c, item &it, map &m )
                 _( "To avoid spilling its contents, <npcname> sets their %1$s on the %2$s." ),
                 it.display_name(), m.name( c.pos() )
             );
-            m.add_item_or_charges( c.pos(), it );
+            m.add_drop_from_character( c, it );
             return true;
         }
     }
@@ -238,7 +238,7 @@ static void put_into_vehicle( Character &c, item_drop_reason reason, const std::
                 it.mod_charges( -charges_added );
                 into_vehicle_count += charges_added;
             }
-            here.add_item_or_charges( where, it );
+            here.add_drop_from_character( c, it, where );
             fallen_count += it.count();
         }
         it.handle_pickup_ownership( c );
@@ -329,7 +329,6 @@ static void put_into_vehicle( Character &c, item_drop_reason reason, const std::
 void drop_on_map( Character &you, item_drop_reason reason, const std::list<item> &items,
                   const tripoint_bub_ms &where )
 {
-    you.invalidate_weight_carried_cache();
     if( items.empty() ) {
         return;
     }
@@ -419,7 +418,7 @@ void drop_on_map( Character &you, item_drop_reason reason, const std::list<item>
         }
     }
     for( const item &it : items ) {
-        here.add_item_or_charges( where, it );
+        here.add_drop_from_character( you, it, where.raw() );
         item( it ).handle_pickup_ownership( you );
     }
 
