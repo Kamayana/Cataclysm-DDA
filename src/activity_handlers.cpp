@@ -1190,7 +1190,7 @@ static void butchery_quarter( item *corpse_item, const Character &you )
 
     // 4 quarters (one exists, add 3, flag does the rest)
     for( int i = 1; i <= 3; i++ ) {
-        here.add_item_or_charges( pos, *corpse_item, true );
+        here.add_item_or_charges( pos, *corpse_item );
     }
 }
 

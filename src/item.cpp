@@ -14122,28 +14122,27 @@ bool item::is_filthy() const
     return has_flag( flag_FILTHY );
 }
 
-bool item::on_drop( const tripoint &pos )
+bool item::on_drop( const tripoint &pos, Character *dropper )
 {
-    return on_drop( pos, get_map() );
+    return on_drop( pos, get_map(), dropper );
 }
 
-bool item::on_drop( const tripoint &pos, map &m )
+bool item::on_drop( const tripoint &pos, map &m, Character *dropper )
 {
-    // dropping liquids, even currently frozen ones, on the ground makes them
-    // dirty
+    // dropping liquids, even currently frozen ones, on the ground makes them dirty
     if( made_of_from_type( phase_id::LIQUID ) && !m.has_flag( ter_furn_flag::TFLAG_LIQUIDCONT, pos ) &&
         !has_own_flag( flag_DIRTY ) ) {
         set_flag( flag_DIRTY );
     }
 
-    avatar &player_character = get_avatar();
+    if( dropper ) {
+        // set variable storing information of character dropping item
+        dropped_char_stats.throwing = dropper->get_skill_level( skill_throw );
 
-    // set variable storing information of character dropping item
-    dropped_char_stats.throwing = player_character.get_skill_level( skill_throw );
-
-    player_character.flag_encumbrance();
-    player_character.invalidate_weight_carried_cache();
-    return type->drop_action && type->drop_action.call( &player_character, *this, pos );
+        dropper->flag_encumbrance();
+        dropper->invalidate_weight_carried_cache();
+    }
+    return type->drop_action && type->drop_action.call( dropper, *this, pos );
 }
 
 time_duration item::age() const

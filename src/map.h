@@ -1296,6 +1296,12 @@ class map
         item &add_item_or_charges( const point &p, const item &obj, bool overflow = true ) {
             return add_item_or_charges( tripoint( p, abs_sub.z() ), obj, overflow );
         }
+        item &add_drop_from_character( Character &dropper, item obj,
+                                       const tripoint pos = tripoint_min, bool overflow = true );
+    private:
+        std::pair<item *, tripoint> _add_item_or_charges( const tripoint &pos, item obj,
+                int &copies_remaining, bool overflow, Character *dropper = nullptr );
+    public:
 
         /**
          * Gets spawn_rate value for item category of 'itm'.
@@ -1600,9 +1606,6 @@ class map
         template<typename Map>
         static cata::copy_const<Map, field_entry> *get_field_helper(
             Map &m, const tripoint &p, const field_type_id &type );
-
-        std::pair<item *, tripoint> _add_item_or_charges( const tripoint &pos, item obj,
-                int &copies_remaining, bool overflow = true );
     public:
 
         // Splatters of various kind

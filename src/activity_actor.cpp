@@ -4972,7 +4972,7 @@ void tent_placement_activity_actor::finish( player_activity &act, Character &p )
 void tent_placement_activity_actor::canceled( player_activity &, Character &p )
 {
     map &here = get_map();
-    here.add_item_or_charges( p.pos() + target, it, true );
+    here.add_item_or_charges( p.pos() + target, it );
 }
 
 void tent_placement_activity_actor::serialize( JsonOut &jsout ) const
@@ -7084,7 +7084,7 @@ void vehicle_unfolding_activity_actor::finish( player_activity &act, Character &
 
 void vehicle_unfolding_activity_actor::canceled( player_activity &act, Character &p )
 {
-    get_map().add_item_or_charges( p.pos(), it, true );
+    get_map().add_item_or_charges( p.pos(), it );
     act.set_to_null();
 }
 

@@ -234,7 +234,7 @@ class item : public visitable
         /**
          * Filter converting this instance to another type preserving all other aspects
          * @param new_type the type id to convert to
-         * @param carrier A pointer to the character that's carrying the item, nullptr if none, which is the default.
+         * @param carrier A pointer to the character that's carrying the item. nullptr if none, which is the default.
          * @return same instance to allow method chaining
          */
         item &convert( const itype_id &new_type, Character *carrier = nullptr );
@@ -770,18 +770,20 @@ class item : public visitable
          * Invokes item type's @ref itype::drop_action.
          * This function can change the item.
          * @param pos Where is the item being placed. Note: the item isn't there yet.
+         * @param dropper A pointer to the character that was carrying the item. nullptr if none, which is the default.
          * @return true if the item was destroyed during placement.
          */
-        bool on_drop( const tripoint &pos );
+        bool on_drop( const tripoint &pos, Character *dropper = nullptr );
 
         /**
          * Invokes item type's @ref itype::drop_action.
          * This function can change the item.
          * @param pos Where is the item being placed. Note: the item isn't there yet.
          * @param map A map object associated with that position.
+         * @param dropper A pointer to the character that was carrying the item. nullptr if none, which is the default.
          * @return true if the item was destroyed during placement.
          */
-        bool on_drop( const tripoint &pos, map &map );
+        bool on_drop( const tripoint &pos, map &map, Character *dropper = nullptr );
 
         /**
          * Consume a specific amount of items of a specific type.

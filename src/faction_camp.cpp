@@ -5364,7 +5364,7 @@ void basecamp::place_results( const item &result )
     map &target_bay = get_camp_map();
     form_storage_zones( target_bay, target_bay.getglobal( target_bay.getlocal( bb_pos ) ) );
     const tripoint &new_spot = target_bay.getlocal( get_dumping_spot() );
-    target_bay.add_item_or_charges( new_spot, result, true );
+    target_bay.add_item_or_charges( new_spot, result );
     apply_camp_ownership( target_bay, new_spot, 10 );
     target_bay.save();
 }

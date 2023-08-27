@@ -4981,13 +4981,21 @@ item &map::add_item_or_charges( const tripoint_bub_ms &pos, item obj, bool overf
 }
 
 item &map::add_item_or_charges( const tripoint_bub_ms &pos, item obj, int &copies_remaining,
-    bool overflow )
+                                bool overflow )
 {
     return *_add_item_or_charges( pos.raw(), std::move( obj ), copies_remaining, overflow ).first;
 }
 
+item &map::add_drop_from_character( Character &dropper, item obj, const tripoint pos,
+                                    bool overflow )
+{
+    int copies = 1;
+    return *_add_item_or_charges( pos == tripoint_min ? dropper.pos() : pos,
+                                  obj, copies, overflow, &dropper ).first;
+}
+
 std::pair<item *, tripoint> map::_add_item_or_charges( const tripoint &pos, item obj,
-        int &copies_remaining, bool overflow )
+        int &copies_remaining, bool overflow, Character *dropper )
 {
     // Checks if item would not be destroyed if added to this tile
     auto valid_tile = [&]( const tripoint & e ) {
@@ -5053,7 +5061,7 @@ std::pair<item *, tripoint> map::_add_item_or_charges( const tripoint &pos, item
         copies_to_add_here > 0 ) {
         // Pass map into on_drop, because this map may not be the global map object (in mapgen, for instance).
         if( obj.made_of( phase_id::LIQUID ) || !obj.has_flag( flag_DROP_ACTION_ONLY_IF_LIQUID ) ) {
-            if( obj.on_drop( pos, *this ) ) {
+            if( obj.on_drop( pos, *this, dropper ) ) {
                 return { &null_item_reference(), tripoint_min };
             }
         }
@@ -5082,7 +5090,7 @@ std::pair<item *, tripoint> map::_add_item_or_charges( const tripoint &pos, item
                 continue;
             }
             if( obj.made_of( phase_id::LIQUID ) || !obj.has_flag( flag_DROP_ACTION_ONLY_IF_LIQUID ) ) {
-                if( obj.on_drop( e, *this ) ) {
+                if( obj.on_drop( e, *this, dropper ) ) {
                     return first_added ? first_added.value() : std::make_pair( &null_item_reference(), tripoint_min );
                 }
             }

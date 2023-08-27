@@ -592,7 +592,7 @@ void monster::try_reproduce()
             if( type->baby_monster ) {
                 here.add_spawn( type->baby_monster, spawn_cnt, pos() );
             } else {
-                here.add_item_or_charges( pos(), item( type->baby_egg, *baby_timer, spawn_cnt ), true );
+                here.add_item_or_charges( pos(), item( type->baby_egg, *baby_timer, spawn_cnt ) );
             }
         }
         *baby_timer += *type->baby_timer;
@@ -663,7 +663,7 @@ void monster::try_biosignature()
         if( *biosig_timer > calendar::turn || counter > 50 ) {
             return;
         }
-        here.add_item_or_charges( pos(), item( type->biosig_item, *biosig_timer, 1 ), true );
+        here.add_item_or_charges( pos(), item( type->biosig_item, *biosig_timer, 1 ) );
         *biosig_timer += *type->biosig_timer;
         counter += 1;
     }
