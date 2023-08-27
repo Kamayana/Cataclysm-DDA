@@ -757,7 +757,7 @@ void item_pocket::casings_handle( const std::function<bool( item & )> &func )
 void item_pocket::handle_liquid_or_spill( Character &guy, const item *avoid )
 {
     if( guy.is_npc() ) {
-        spill_contents( guy.pos() );
+        spill_contents( guy.pos(), &guy );
         return;
     }
 
@@ -881,7 +881,7 @@ bool item_pocket::process( const itype &type, map &here, Character *carrier, con
         }
         if( it->process( here, carrier, pos, type.insulation_factor * insulation, flag,
                          spoil_multiplier ) ) {
-            it->spill_contents( pos );
+            it->spill_contents( pos, carrier );
             it = contents.erase( it );
             processed = true;
         } else {
@@ -1829,7 +1829,7 @@ void item_pocket::overflow( const tripoint &pos, const item_location &loc )
         if( ammo_iter == data->ammo_restriction.end() ) {
             // only one ammotype is allowed in an ammo restricted pocket
             // so if the first one is wrong, they're all wrong
-            spill_contents( pos );
+            spill_contents( pos, loc.carrier() );
             return;
         }
         int total_qty = 0;
@@ -1890,7 +1890,7 @@ void item_pocket::on_contents_changed()
     restack();
 }
 
-bool item_pocket::spill_contents( const tripoint &pos )
+bool item_pocket::spill_contents( const tripoint &pos, Character *spiller )
 {
     if( is_type( pocket_type::EBOOK ) || is_type( pocket_type::CORPSE ) ||
         is_type( pocket_type::CABLE ) ) {
@@ -1898,8 +1898,14 @@ bool item_pocket::spill_contents( const tripoint &pos )
     }
 
     map &here = get_map();
-    for( item &it : contents ) {
-        here.add_item_or_charges( pos, it );
+    if( spiller ) {
+        for( item &it : contents ) {
+            here.add_drop_from_character( *spiller, it, pos );
+        }
+    } else {
+        for( item &it : contents ) {
+            here.add_item_or_charges( pos, it );
+        }
     }
 
     contents.clear();
@@ -1942,7 +1948,7 @@ void item_pocket::process( map &here, Character *carrier, const tripoint &pos, f
         if( iter->process( here, carrier, pos, insulation, flag,
                            // spoil multipliers on pockets are not additive or multiplicative, they choose the best
                            std::min( spoil_multiplier_parent, spoil_multiplier() ) ) ) {
-            iter->spill_contents( pos );
+            iter->spill_contents( pos, carrier );
             iter = contents.erase( iter );
         } else {
             ++iter;
@@ -1970,7 +1976,7 @@ void item_pocket::leak( map &here, Character *carrier, const tripoint &pos,
                 pocke->add( *it );
             } else {
                 iter->unset_flag( flag_FROM_FROZEN_LIQUID );
-                iter->on_drop( pos );
+                iter->on_drop( pos, carrier );
                 here.add_item_or_charges( pos, *iter );
                 carrier->add_msg_if_player( _( "Liquid leaked out from the %s and dripped onto the ground!" ),
                                             this->get_name() );

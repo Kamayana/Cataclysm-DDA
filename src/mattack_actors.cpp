@@ -898,7 +898,7 @@ bool melee_actor::call( monster &z ) const
                         float path_distance = rng_float( 0, 1.0 );
                         tripoint vector = target->pos() - z.pos();
                         vector = tripoint( vector.x * path_distance, vector.y * path_distance, vector.z * path_distance );
-                        pd[index]->spill_contents( z.pos() + vector );
+                        pd[index]->spill_contents( z.pos() + vector, target->as_character() );
                         add_msg( m_bad, _( "As you hit the ground something comes loose and is knocked away from you!" ) );
                         popup( _( "As you hit the ground something comes loose and is knocked away from you!" ) );
                     }

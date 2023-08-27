@@ -910,7 +910,7 @@ static void smash()
                 const int vol = weapon->volume() * glass_fraction / units::legacy_volume_factor;
                 if( glass_portion && rng( 0, vol + 3 ) < vol ) {
                     add_msg( m_bad, _( "Your %s shatters!" ), weapon->tname() );
-                    weapon->spill_contents( player_character.pos() );
+                    weapon->spill_contents( player_character.pos(), &player_character );
                     sounds::sound( player_character.pos(), 24, sounds::sound_t::combat, "CRACK!", true, "smash",
                                    "glass" );
                     player_character.deal_damage( nullptr, bodypart_id( "hand_r" ), damage_instance( damage_cut,

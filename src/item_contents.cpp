@@ -1150,11 +1150,11 @@ void item_contents::on_pickup( Character &guy, item *avoid )
     }
 }
 
-bool item_contents::spill_contents( const tripoint &pos )
+bool item_contents::spill_contents( const tripoint &pos, Character *spiller )
 {
     bool spilled = false;
     for( item_pocket &pocket : contents ) {
-        spilled = pocket.spill_contents( pos ) || spilled;
+        spilled = pocket.spill_contents( pos, spiller ) || spilled;
     }
     return spilled;
 }

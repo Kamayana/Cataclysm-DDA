@@ -273,7 +273,7 @@ class item_contents
 
         item_pocket *contained_where( const item &contained );
         void on_pickup( Character &guy, item *avoid = nullptr );
-        bool spill_contents( const tripoint &pos );
+        bool spill_contents( const tripoint &pos, Character *spiller = nullptr );
         // spill items that don't fit in the container
         void overflow( const tripoint &pos, const item_location &loc );
         void clear_items();

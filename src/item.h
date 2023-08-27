@@ -1726,17 +1726,18 @@ class item : public visitable
         bool will_spill_if_unsealed() const;
         /**
          * Unloads the item's contents.
-         * @param c Character who receives the contents.
-         *          If c is the player, liquids will be handled, otherwise they will be spilled.
+         * @param spiller Character who is spilling and receiving the contents.
+         *          If spiller is the player, liquids will be handled, otherwise they will be spilled.
          * @return If the item is now empty.
          */
-        bool spill_contents( Character &c );
+        bool spill_contents( Character &spiller );
         /**
          * Unloads the item's contents.
          * @param pos Position to dump the contents on.
+         * @param spiller The character that holds the item that's spilling
          * @return If the item is now empty.
          */
-        bool spill_contents( const tripoint &pos );
+        bool spill_contents( const tripoint &pos, Character *spiller = nullptr );
         bool spill_open_pockets( Character &guy, const item *avoid = nullptr );
         // spill items that don't fit in the container
         void overflow( const tripoint &pos, const item_location &loc = item_location::nowhere );

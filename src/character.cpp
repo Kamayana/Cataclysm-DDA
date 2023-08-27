@@ -11907,7 +11907,7 @@ void Character::leak_items()
     std::vector<item_location> removed_items;
     if( weapon.is_container() ) {
         if( weapon.leak( get_map(), this, pos() ) ) {
-            weapon.spill_contents( pos() );
+            weapon.spill_contents( pos(), this );
         }
     } else if( weapon.made_of( phase_id::LIQUID ) ) {
         if( weapon.leak( get_map(), this, pos() ) ) {
@@ -11922,7 +11922,7 @@ void Character::leak_items()
             continue;
         }
         if( it->leak( get_map(), this, pos() ) ) {
-            it->spill_contents( pos() );
+            it->spill_contents( pos(), this );
             removed_items.push_back( it );
         }
     }
@@ -11934,7 +11934,7 @@ void Character::leak_items()
 void Character::process_items()
 {
     if( weapon.process( get_map(), this, pos() ) ) {
-        weapon.spill_contents( pos() );
+        weapon.spill_contents( pos(), this );
         remove_weapon();
     }
 
@@ -11944,7 +11944,7 @@ void Character::process_items()
             continue;
         }
         if( it->process( get_map(), this, pos() ) ) {
-            it->spill_contents( pos() );
+            it->spill_contents( pos(), this );
             removed_items.push_back( it );
         }
     }

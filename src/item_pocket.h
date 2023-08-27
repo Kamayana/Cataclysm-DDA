@@ -303,7 +303,7 @@ class item_pocket
         std::optional<item> remove_item( const item_location &it );
         // spills any contents that can't fit into the pocket, largest items first
         void overflow( const tripoint &pos, const item_location &loc );
-        bool spill_contents( const tripoint &pos );
+        bool spill_contents( const tripoint &pos, Character *spiller );
         void on_pickup( Character &guy, item *avoid = nullptr );
         void on_contents_changed();
         void handle_liquid_or_spill( Character &guy, const item *avoid = nullptr );

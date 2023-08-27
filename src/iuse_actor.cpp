@@ -1107,7 +1107,7 @@ std::optional<int> deploy_furn_actor::use( Character *p, item &it,
     }
 
     here.furn_set( pnt, furn_type );
-    it.spill_contents( pnt );
+    it.spill_contents( pnt, p );
     p->mod_moves( -to_moves<int>( 2_seconds ) );
     return 1;
 }

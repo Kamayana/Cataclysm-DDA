@@ -395,7 +395,7 @@ item Character::i_rem( const item *it )
 
 void Character::i_rem_keep_contents( const item *const it )
 {
-    i_rem( it ).spill_contents( pos() );
+    i_rem( it ).spill_contents( pos(), this );
 }
 
 bool Character::i_add_or_drop( item &it, int qty, const item *avoid,
@@ -409,7 +409,7 @@ bool Character::i_add_or_drop( item &it, int qty, const item *avoid,
     for( int i = 0; i < qty; ++i ) {
         drop |= !can_pickWeight( it, !get_option<bool>( "DANGEROUS_PICKUPS" ) ) || !can_pickVolume( it );
         if( drop ) {
-            retval &= !here.add_item_or_charges( pos(), it ).is_null();
+            retval &= !here.add_drop_from_character( *this, it ).is_null();
         } else if( add ) {
             i_add( it, true, avoid,
                    original_inventory_item, /*allow_drop=*/true, /*allow_wield=*/!has_wield_conflicts( it ) );

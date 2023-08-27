@@ -9992,28 +9992,28 @@ std::pair<item_location, item_pocket *> item::best_pocket( const item &it, item_
                                  nested, ignore_rigidity );
 }
 
-bool item::spill_contents( Character &c )
+bool item::spill_contents( Character &spiller )
 {
     if( !is_container() || is_container_empty() ) {
         return true;
     }
 
-    if( c.is_npc() ) {
-        return spill_contents( c.pos() );
+    if( spiller.is_npc() ) {
+        return spill_contents( spiller.pos(), &spiller );
     }
 
-    contents.handle_liquid_or_spill( c, /*avoid=*/this );
+    contents.handle_liquid_or_spill( spiller, /*avoid=*/this );
     on_contents_changed();
 
     return is_container_empty();
 }
 
-bool item::spill_contents( const tripoint &pos )
+bool item::spill_contents( const tripoint &pos, Character *spiller )
 {
     if( !is_container() || is_container_empty() ) {
         return true;
     }
-    return contents.spill_contents( pos );
+    return contents.spill_contents( pos, spiller );
 }
 
 bool item::spill_open_pockets( Character &guy, const item *avoid )

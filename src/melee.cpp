@@ -291,7 +291,7 @@ bool Character::handle_melee_wear( item_location shield, float wear_multiplier )
     // Preserve item temporarily for component breakdown
     item temp = *shield;
 
-    shield->get_contents().spill_contents( pos() );
+    shield->get_contents().spill_contents( pos(), this );
 
     shield.remove_item();
 
@@ -2344,7 +2344,7 @@ std::string Character::melee_special_effects( Creature &t, damage_instance &d, i
         sounds::sound( pos(), 16, sounds::sound_t::combat, "Crack!", true, "smash_success",
                        "smash_glass_contents" );
         // Dump its contents on the ground
-        weap.spill_contents( pos() );
+        weap.spill_contents( pos(), this );
         // Take damage
         damage_instance di = damage_instance();
         di.add_damage( damage_cut, rng( 0, vol * 2 ) );

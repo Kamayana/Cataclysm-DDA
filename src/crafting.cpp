@@ -2472,7 +2472,7 @@ item_location Character::create_in_progress_disassembly( item_location target )
         remove_ammo( orig_item, *this );
         remove_radio_mod( orig_item, *this );
         if( orig_item.is_container() ) {
-            orig_item.spill_contents( pos() );
+            orig_item.spill_contents( pos(), this );
         }
         if( orig_item.count_by_charges() ) {
             //subtract selected number of rounds to disassemble
