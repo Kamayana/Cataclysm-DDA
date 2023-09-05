@@ -329,7 +329,6 @@ static void put_into_vehicle( Character &c, item_drop_reason reason, const std::
 void drop_on_map( Character &you, item_drop_reason reason, const std::list<item> &items,
                   const tripoint_bub_ms &where )
 {
-    you.invalidate_weight_carried_cache();
     if( items.empty() ) {
         return;
     }
