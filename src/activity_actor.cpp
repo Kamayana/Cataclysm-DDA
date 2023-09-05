@@ -4385,7 +4385,7 @@ void reload_activity_actor::finish( player_activity &act, Character &who )
         case 2:
         default:
             // In player inventory and player is wielding something.
-            if( loc.held_by( who ) ) {
+            if( loc.is_carried_by( who ) ) {
                 add_msg( m_neutral, _( "The %s no longer fits in your inventory so you drop it instead." ),
                          reloadable_name );
             }

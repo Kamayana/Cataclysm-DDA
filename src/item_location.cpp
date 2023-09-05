@@ -670,7 +670,7 @@ class item_location::impl::item_in_container : public item_location::impl
             ch.mod_moves( -obtain_cost( ch, qty ) );
 
             on_contents_changed();
-            if( container.held_by( ch ) ) {
+            if( container.is_carried_by( ch ) ) {
                 // we don't need to move it in this case, it's in a pocket
                 // we just charge the obtain cost and leave it in place. otherwise
                 // it's liable to end up back in the same pocket, where shenanigans ensue

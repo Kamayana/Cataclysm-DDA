@@ -1979,7 +1979,7 @@ ret_val<void> npc::wants_to_sell( const item_location &it, int at_price ) const
     if( it->has_flag( flag_TRADER_KEEP ) ||
         is_worn( *it ) ||
         ( ( !myclass->sells_belongings || it->has_flag( flag_TRADER_KEEP_EQUIPPED ) ) &&
-          it.held_by( *this ) ) ) {
+          it.is_carried_by( *this ) ) ) {
         return ret_val<void>::make_failure( _( "<npcname> will never sell this" ) );
     }
 

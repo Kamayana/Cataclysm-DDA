@@ -85,7 +85,7 @@ std::list<item> npc_trading::transfer_items( trade_selector::select_t &stuff, Ch
             }
         }
 
-        if( ip.first.held_by( giver ) ) {
+        if( ip.first.is_carried_by( giver ) ) {
             if( ip.first->count_by_charges() ) {
                 giver.use_charges( gift.typeId(), ip.second );
             } else if( ip.second > 0 ) {

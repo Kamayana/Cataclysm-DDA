@@ -113,7 +113,7 @@ class item_location
         Character *carrier() const;
 
         /** returns true if the item is in the inventory of the given character **/
-        bool held_by( Character const &who ) const;
+        bool is_carried_by( Character const &who ) const;
 
         /**
          * true if this item location can and does have a parent
