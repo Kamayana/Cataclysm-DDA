@@ -190,7 +190,7 @@ TEST_CASE( "inactive_container_with_active_contents", "[active_item][map]" )
     item disinfectant( "disinfectant" );
     REQUIRE( disinfectant.needs_processing() );
 
-    ret_val<void> const ret =
+    ret_val<item_pocket *> const ret =
         bottle_plastic.put_in( disinfectant, item_pocket::pocket_type::CONTAINER );
     REQUIRE( ret.success() );
 
@@ -240,7 +240,7 @@ TEST_CASE( "milk_rotting", "[active_item][map]" )
     if( in_container ) {
         sealed = GENERATE( true, false );
         item bottle_plastic( "bottle_plastic" );
-        ret_val<void> const ret = bottle_plastic.put_in( almond_milk, item_pocket::pocket_type::CONTAINER );
+        ret_val<item_pocket *> const ret = bottle_plastic.put_in( almond_milk, item_pocket::pocket_type::CONTAINER );
         REQUIRE( ret.success() );
 
         bp = &here.add_item( test_loc, bottle_plastic );

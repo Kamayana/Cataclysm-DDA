@@ -931,7 +931,7 @@ class item : public visitable
         /**
          * Puts the given item into this one.
          */
-        ret_val<void> put_in( const item &payload, item_pocket::pocket_type pk_type,
+        ret_val<item_pocket *> put_in( const item &payload, item_pocket::pocket_type pk_type,
                               bool unseal_pockets = false );
         void force_insert_item( const item &it, item_pocket::pocket_type pk_type );
 

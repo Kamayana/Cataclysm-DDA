@@ -1601,7 +1601,7 @@ int item::insert_cost( const item &it ) const
     return contents.insert_cost( it );
 }
 
-ret_val<void> item::put_in( const item &payload, item_pocket::pocket_type pk_type,
+ret_val<item_pocket *> item::put_in( const item &payload, item_pocket::pocket_type pk_type,
                             const bool unseal_pockets )
 {
     ret_val<item_pocket *> result = contents.insert_item( payload, pk_type );
@@ -1617,9 +1617,9 @@ ret_val<void> item::put_in( const item &payload, item_pocket::pocket_type pk_typ
     }
     on_contents_changed();
     if( result.success() ) {
-        return ret_val<void>::make_success( result.str() );
+        return result;
     } else {
-        return ret_val<void>::make_failure( result.str() );
+        return ret_val<item_pocket *>::make_failure( nullptr, result.str() );
     }
 }
 

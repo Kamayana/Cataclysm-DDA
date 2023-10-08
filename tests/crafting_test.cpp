@@ -743,7 +743,7 @@ TEST_CASE( "UPS_shows_as_a_crafting_component", "[crafting][ups]" )
     item_location ups = dummy.i_add( item( "UPS_ON" ) );
     item ups_mag( ups->magazine_default() );
     ups_mag.ammo_set( ups_mag.ammo_default(), 500 );
-    ret_val<void> result = ups->put_in( ups_mag, item_pocket::pocket_type::MAGAZINE_WELL );
+    ret_val<item_pocket *> result = ups->put_in( ups_mag, item_pocket::pocket_type::MAGAZINE_WELL );
     INFO( result.c_str() );
     REQUIRE( result.success() );
     REQUIRE( dummy.has_item( *ups ) );
@@ -776,12 +776,12 @@ TEST_CASE( "UPS_modded_tools", "[crafting][ups]" )
 
     item ups_mag( ups_loc->magazine_default() );
     ups_mag.ammo_set( ups_mag.ammo_default(), ammo_count );
-    ret_val<void> result = ups_loc->put_in( ups_mag, item_pocket::pocket_type::MAGAZINE_WELL );
+    ret_val<item_pocket *> result = ups_loc->put_in( ups_mag, item_pocket::pocket_type::MAGAZINE_WELL );
     REQUIRE( result.success() );
 
     item_location soldering_iron = dummy.i_add( item( "soldering_iron" ) );
     item battery_ups( "battery_ups" );
-    ret_val<void> ret_solder = soldering_iron->put_in( battery_ups, item_pocket::pocket_type::MOD );
+    ret_val<item_pocket *> ret_solder = soldering_iron->put_in( battery_ups, item_pocket::pocket_type::MOD );
     REQUIRE( ret_solder.success() );
     REQUIRE( soldering_iron->has_flag( json_flag_USE_UPS ) );
 
