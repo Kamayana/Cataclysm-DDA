@@ -289,7 +289,30 @@ item *item_pocket::restack( /*const*/ item *it )
 {
     item *ret = it;
     if( contents.size() <= 1 ) {
-        return ret;
+        return it;
+    }
+    if( is_type( item_pocket::pocket_type::MAGAZINE ) ) {
+        // Restack magazine contents in a way that preserves order of items
+        for( auto iter = contents.begin(); iter != contents.end(); ) {
+            if( !iter->count_by_charges() ) {
+                continue;
+            }
+
+            auto next = std::next( iter, 1 );
+            if( next == contents.end() ) {
+                break;
+            }
+
+            if( iter->combine( *next ) ) {
+                // next was placed in iter, check if next was the item that we track
+                if( it != nullptr && &( *next ) == it ) {
+                    it = &( *iter );
+                }
+                iter = contents.erase( next );
+            } else {
+                ++iter;
+            }
+        }
     }
     for( auto outer_iter = contents.begin(); outer_iter != contents.end(); ++outer_iter ) {
         if( !outer_iter->count_by_charges() ) {
@@ -302,8 +325,8 @@ item *item_pocket::restack( /*const*/ item *it )
             }
             if( outer_iter->combine( *inner_iter ) ) {
                 // inner was placed in outer, check if inner was the item that we track
-                if( &( *inner_iter ) == ret ) {
-                    ret = &( *outer_iter );
+                if( it != nullptr && &( *inner_iter ) == it ) {
+                    it = &( *outer_iter );
                 }
                 inner_iter = contents.erase( inner_iter );
                 outer_iter = contents.begin();
@@ -312,7 +335,7 @@ item *item_pocket::restack( /*const*/ item *it )
             }
         }
     }
-    return ret;
+    return it;
 }
 
 bool item_pocket::has_item_stacks_with( const item &it ) const
@@ -2157,14 +2180,20 @@ std::list<item> &item_pocket::edit_contents()
 ret_val<item_pocket::contain_code> item_pocket::insert_item( const item &it,
         const bool into_bottom, bool restack_charges, bool ignore_contents )
 {
+    ret_val<item *> rett = ret_val<item *>::make_success();
+    item *inserted = nullptr;
+    ret_val<item_pocket::contain_code> containable = !is_standard_type() ?
+            ret_val<item_pocket::contain_code>::make_success() : can_contain( it, ignore_contents );
     ret_val<item_pocket::contain_code> ret = !is_standard_type() ?
             ret_val<item_pocket::contain_code>::make_success() : can_contain( it, ignore_contents );
 
-    if( ret.success() ) {
+    if( containable.success() ) {
         if( !into_bottom ) {
             contents.push_front( it );
+            inserted = &contents.front();
         } else {
             contents.push_back( it );
+            inserted = &contents.back();
         }
         if( restack_charges ) {
             restack();

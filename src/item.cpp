@@ -1601,10 +1601,10 @@ int item::insert_cost( const item &it ) const
     return contents.insert_cost( it );
 }
 
-ret_val<item_pocket *> item::put_in( const item &payload, item_pocket::pocket_type pk_type,
+ret_val<void> item::put_in( const item &payload, item_pocket::pocket_type pk_type,
                             const bool unseal_pockets )
 {
-    ret_val<item_pocket *> result = contents.insert_item( payload, pk_type );
+    ret_val<item_pocket *> result = contents.insert_item( payload, pk_type, false, unseal_pockets );
     if( !result.success() ) {
         debugmsg( "tried to put an item (%s) count (%d) in a container (%s) that cannot contain it: %s",
                   payload.typeId().str(), payload.count(), typeId().str(), result.str() );
@@ -1612,14 +1612,14 @@ ret_val<item_pocket *> item::put_in( const item &payload, item_pocket::pocket_ty
     if( pk_type == item_pocket::pocket_type::MOD ) {
         update_modified_pockets();
     }
-    if( unseal_pockets && result.success() ) {
+    /*if( unseal_pockets && result.success() ) { // TODOkama does update_modified_pockets need to be called first?
         result.value()->unseal();
-    }
+    }*/
     on_contents_changed();
     if( result.success() ) {
-        return result;
+        return ret_val<void>::make_success( result.str() );
     } else {
-        return ret_val<item_pocket *>::make_failure( nullptr, result.str() );
+        return ret_val<void>::make_failure( result.str() );
     }
 }
 

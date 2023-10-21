@@ -120,7 +120,8 @@ static void expect_can_insert( item_pocket &pocket, const item &it )
     ret_val<item_pocket::contain_code> rate_can = pocket.insert_item( it );
     CHECK( rate_can.success() );
     CHECK( rate_can.str().empty() );
-    CHECK( rate_can.value() == item_pocket::contain_code::SUCCESS );
+    CHECK( pocket.can_contain( it ).value() == item_pocket::contain_code::SUCCESS );
+    //CHECK( rate_can.value() == item_pocket::contain_code::SUCCESS );
 }
 
 // Call pocket.insert_item( it ) and expect it to fail, with an expected reason and contain_code
@@ -132,7 +133,8 @@ static void expect_cannot_insert( item_pocket &pocket, const item &it,
     ret_val<item_pocket::contain_code> rate_can = pocket.insert_item( it );
     CHECK_FALSE( rate_can.success() );
     CHECK( rate_can.str() == expect_reason );
-    CHECK( rate_can.value() == expect_code );
+    CHECK( pocket.can_contain( it ).value() == expect_code );
+    //CHECK( rate_can.value() == expect_code );
 }
 
 // Max item length
@@ -218,7 +220,7 @@ TEST_CASE( "max_item_length", "[pocket][max_item_length]" )
 
             REQUIRE( box.is_container_empty() );
             std::string dmsg = capture_debugmsg_during( [&box, &rod_15]() {
-                ret_val<item_pocket *> result = box.put_in( rod_15, item_pocket::pocket_type::CONTAINER );
+                ret_val<void> result = box.put_in( rod_15, item_pocket::pocket_type::CONTAINER );
                 CHECK_FALSE( result.success() );
             } );
             CHECK_THAT( dmsg, Catch::EndsWith( "item is too long" ) );

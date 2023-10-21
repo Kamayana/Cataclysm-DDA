@@ -99,7 +99,7 @@ TEST_CASE( "tool_transform_when_activated", "[iuse][tool][transform]" )
 
         // Put battery in flashlight
         REQUIRE( flashlight.has_pocket_type( item_pocket::pocket_type::MAGAZINE_WELL ) );
-        ret_val<item_pocket *> result = flashlight.put_in( bat_cell, item_pocket::pocket_type::MAGAZINE_WELL );
+        ret_val<void> result = flashlight.put_in( bat_cell, item_pocket::pocket_type::MAGAZINE_WELL );
         REQUIRE( result.success() );
         REQUIRE( flashlight.magazine_current() );
 
