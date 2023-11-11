@@ -197,8 +197,6 @@ static const mtype_id mon_zombie_smoker( "mon_zombie_smoker" );
 static const mtype_id mon_zombie_soldier( "mon_zombie_soldier" );
 static const mtype_id mon_zombie_survivor( "mon_zombie_survivor" );
 
-static const npc_class_id NC_BOUNTY_HUNTER( "NC_BOUNTY_HUNTER" );
-
 static const quality_id qual_BOIL( "BOIL" );
 static const quality_id qual_JACK( "JACK" );
 static const quality_id qual_LIFT( "LIFT" );
@@ -316,7 +314,9 @@ item::item( const itype *type, time_point turn, int qty ) : type( type ), bday( 
     } else {
         if( type->tool && type->tool->rand_charges.size() > 1 ) {
             const int charge_roll = rng( 1, type->tool->rand_charges.size() - 1 );
-            charges = rng( type->tool->rand_charges[charge_roll - 1], type->tool->rand_charges[charge_roll] );
+            const int charge_count = rng( type->tool->rand_charges[charge_roll - 1],
+                                          type->tool->rand_charges[charge_roll] );
+            ammo_set( ammo_default(), charge_count );
         } else {
             charges = type->charges_default();
         }
@@ -379,6 +379,21 @@ item::item( const itype *type, time_point turn, int qty ) : type( type ), bday( 
 
     if( !type->snippet_category.empty() ) {
         snip_id = SNIPPET.random_id_from_category( type->snippet_category );
+    }
+
+    if( type->expand_snippets ) {
+        set_var( "description", SNIPPET.expand( type->description.translated() ) );
+    }
+
+    if( has_itype_variant() && itype_variant().expand_snippets ) {
+        const itype_variant_data &variant = itype_variant();
+        if( variant.append ) {
+            set_var( "description",
+                     string_format( "%s  %s", SNIPPET.expand( type->description.translated() ),
+                                    SNIPPET.expand( variant.alt_description.translated() ) ) );
+        } else {
+            set_var( "description", SNIPPET.expand( variant.alt_description.translated() ) );
+        }
     }
 
     if( current_phase == phase_id::PNULL ) {
@@ -631,6 +646,10 @@ item &item::convert( const itype_id &new_type, Character *carrier )
     temp.update_modified_pockets();
     temp.contents.combine( contents, true );
     contents = temp.contents;
+    current_phase = new_type->phase;
+    if( count_by_charges() != new_type->count_by_charges() ) {
+        charges = new_type->charges_default();
+    }
 
     if( temp.type->countdown_interval > 0_seconds ) {
         countdown_point = calendar::turn + type->countdown_interval;
@@ -1504,9 +1523,9 @@ bool item::stacks_with( const item &rhs, bool check_components, bool combine_liq
         // Stack items that fall into the same "bucket" of freshness.
         // Distant buckets are larger than near ones.
         std::pair<int, clipped_unit> my_clipped_time_to_rot =
-            clipped_time( get_shelf_life() - rot );
+            clipped_time( std::max( get_shelf_life() - rot, 0_seconds ) );
         std::pair<int, clipped_unit> other_clipped_time_to_rot =
-            clipped_time( rhs.get_shelf_life() - rhs.rot );
+            clipped_time( std::max( rhs.get_shelf_life() - rhs.rot, 0_seconds ) );
         if( ( !combine_liquid || !made_of_from_type( phase_id::LIQUID ) ) &&
             my_clipped_time_to_rot != other_clipped_time_to_rot ) {
             return false;
@@ -1943,6 +1962,23 @@ bool item::is_owned_by( const Character &c, bool available_to_take ) const
         return false;
     }
     return c.get_faction()->id == get_owner();
+}
+
+bool item::is_owned_by( const monster &m, bool available_to_take ) const
+{
+    // owner.is_null() implies faction_id( "no_faction" ) which shouldn't happen, or no owner at all.
+    // either way, certain situations this means the thing is available to take.
+    // in other scenarios we actually really want to check for id == id, even for no_faction
+    if( get_owner().is_null() ) {
+        return available_to_take;
+    }
+    for( const std::pair<const faction_id, faction> &fact : g->faction_manager_ptr->all() ) {
+        if( fact.second.mon_faction != m.faction.id() ) {
+            continue;
+        }
+        return fact.first == get_owner();
+    }
+    return false;
 }
 
 bool item::is_old_owner( const Character &c, bool available_to_take ) const
@@ -2558,7 +2594,7 @@ void item::food_info( const item *food_item, std::vector<iteminfo> &info,
         return string_format( format, v.first->name(), min_value, max_value );
     };
 
-    const auto max_nutr_vitamins = sorted_lex( max_nutr.vitamins );
+    const auto max_nutr_vitamins = sorted_lex( max_nutr.vitamins() );
     const std::string required_vits = enumerate_as_string( max_nutr_vitamins,
     [&]( const std::pair<vitamin_id, int> &v ) {
         return format_vitamin( v, true );
@@ -2605,7 +2641,7 @@ void item::food_info( const item *food_item, std::vector<iteminfo> &info,
 
     ///\EFFECT_SURVIVAL >=3 allows detection of poisonous food
     if( food_item->has_flag( flag_HIDDEN_POISON ) &&
-        player_character.get_skill_level( skill_survival ) >= 3 &&
+        player_character.get_greater_skill_or_knowledge_level( skill_survival ) >= 3 &&
         parts->test( iteminfo_parts::FOOD_POISON ) ) {
         info.emplace_back( "DESCRIPTION",
                            _( "* On closer inspection, this appears to be "
@@ -2614,7 +2650,7 @@ void item::food_info( const item *food_item, std::vector<iteminfo> &info,
 
     ///\EFFECT_SURVIVAL >=5 allows detection of hallucinogenic food
     if( food_item->has_flag( flag_HIDDEN_HALLU ) &&
-        player_character.get_skill_level( skill_survival ) >= 5 &&
+        player_character.get_greater_skill_or_knowledge_level( skill_survival ) >= 5 &&
         parts->test( iteminfo_parts::FOOD_HALLUCINOGENIC ) ) {
         info.emplace_back( "DESCRIPTION",
                            _( "* On closer inspection, this appears to be "
@@ -2652,7 +2688,7 @@ void item::rot_info( const item *const food_item, std::vector<iteminfo> &info,
                                   "tasteless</bad>.  It will rot quickly if thawed again." ) );
         }
         if( food_item->has_flag( flag_NO_PARASITES ) &&
-            player_character.get_skill_level( skill_cooking ) >= 3 ) {
+            player_character.get_greater_skill_or_knowledge_level( skill_cooking ) >= 3 ) {
             info.emplace_back( "DESCRIPTION",
                                _( "* It seems that deep freezing <good>killed all "
                                   "parasites</good>." ) );
@@ -5597,6 +5633,36 @@ void item::final_info( std::vector<iteminfo> &info, const iteminfo_query *parts,
                               "<info>sickly green glow</info>." ) );
     }
 
+    if( type->milling_data ) {
+        if( parts->test( iteminfo_parts::DESCRIPTION_MILLEABLE ) ) {
+
+            const islot_milling &mdata = *type->milling_data;
+            const int conv_rate = mdata.conversion_rate_;
+            std::string rate_info;
+            if( conv_rate < 1 ) {
+                const int ratio = int( 1 / mdata.conversion_rate_ );
+                rate_info = string_format(
+                                _( "* You need at least <neutral>%i %s</neutral> to produce <neutral>1 %s</neutral>." ), ratio,
+                                type->nname( ratio ),
+                                mdata.into_->nname( 1 ) );
+            } else {
+                const int ratio = int( mdata.conversion_rate_ );
+                rate_info = string_format(
+                                _( "* <neutral>1 %s</neutral> can be turned into <neutral>%i %s</neutral>." ),
+                                type->nname( 1 ), ratio,
+                                mdata.into_->nname( ratio ) );
+            }
+            info.emplace_back( "DESCRIPTION",
+                               string_format( _( "* This item can be <info>milled</info>." ) ) );
+            info.emplace_back( "DESCRIPTION", rate_info );
+            info.emplace_back( "DESCRIPTION",
+                               string_format(
+                                   _( "* It has a conversion rate of <neutral>1 %s</neutral> for <neutral>%.3f %s</neutral>." ),
+                                   type->nname( 1 ),
+                                   mdata.conversion_rate_, mdata.into_->nname( mdata.conversion_rate_ ) ) );
+        }
+    }
+
     if( is_brewable() ) {
         const item &brewed = *this;
         if( parts->test( iteminfo_parts::DESCRIPTION_BREWABLE_DURATION ) ) {
@@ -6305,34 +6371,51 @@ void item::handle_pickup_ownership( Character &c )
     if( is_owned_by( c ) ) {
         return;
     }
-    Character &player_character = get_player_character();
     // Add ownership to item if unowned
     if( owner.is_null() ) {
         set_owner( c );
     } else {
         if( !is_owned_by( c ) && c.is_avatar() ) {
-            std::vector<npc *> witnesses;
-            for( npc &elem : g->all_npcs() ) {
-                if( rl_dist( elem.pos(), player_character.pos() ) < MAX_VIEW_DISTANCE &&
-                    elem.get_faction() && is_owned_by( elem ) && elem.sees( player_character.pos() ) ) {
-                    elem.say( "<witnessed_thievery>", 7 );
-                    npc *npc_to_add = &elem;
-                    witnesses.push_back( npc_to_add );
+            const auto sees_stealing = [&c, this]( const Creature & cr ) {
+                const npc *const as_npc = cr.as_npc();
+                const monster *const as_monster = cr.as_monster();
+                bool owned_by = false;
+                if( as_npc ) {
+                    owned_by = is_owned_by( *as_npc );
+                } else if( as_monster ) {
+                    owned_by = is_owned_by( *as_monster );
                 }
+                return &cr != &c && owned_by && rl_dist( cr.pos(), c.pos() ) < MAX_VIEW_DISTANCE &&
+                       cr.sees( c.pos() );
+            };
+            const auto sort_criteria = []( const Creature * lhs, const Creature * rhs ) {
+                const npc *const lnpc = lhs->as_npc();
+                const npc *const rnpc = rhs->as_npc();
+                if( !lnpc && !rnpc ) {
+                    const monster *const lmon = lhs->as_monster();
+                    const monster *const rmon = rhs->as_monster();
+                    // Sort more difficult monsters first
+                    return ( lmon ? lmon->type->difficulty : 0 ) > ( rmon ? rmon->type->difficulty : 0 );
+                } else if( lnpc && !rnpc ) {
+                    return true;
+                } else if( !lnpc && rnpc ) {
+                    return false;
+                }
+                return npc::theft_witness_compare( lnpc, rnpc );
+            };
+            std::vector<Creature *> witnesses = g->get_creatures_if( sees_stealing );
+            std::sort( witnesses.begin(), witnesses.end(), sort_criteria );
+            for( Creature *c : witnesses ) {
+                const npc *const elem = c->as_npc();
+                if( !elem ) {
+                    // Sorted to have NPCs first
+                    break;
+                }
+                elem->say( "<witnessed_thievery>", 7 );
             }
             if( !witnesses.empty() ) {
                 set_old_owner( get_owner() );
-                bool guard_chosen = false;
-                for( npc *elem : witnesses ) {
-                    if( elem->myclass == NC_BOUNTY_HUNTER ) {
-                        guard_chosen = true;
-                        elem->witness_thievery( &*this );
-                        break;
-                    }
-                }
-                if( !guard_chosen ) {
-                    random_entry( witnesses )->witness_thievery( &*this );
-                }
+                witnesses[0]->witness_thievery( this );
             }
             set_owner( c );
         }
@@ -6419,11 +6502,17 @@ std::string item::overheat_symbol() const
     if( !is_gun() || type->gun->overheat_threshold <= 0.0 ) {
         return "";
     }
+    double modifier = 0;
+    float multiplier = 1.0f;
+    for( const item *mod : gunmods() ) {
+        modifier += mod->type->gunmod->overheat_threshold_modifier;
+        multiplier *= mod->type->gunmod->overheat_threshold_multiplier;
+    }
     if( faults.count( fault_overheat_safety ) ) {
         return string_format( _( "<color_light_green>\u2588VNT </color>" ) );
     }
     switch( std::min( 5, static_cast<int>( get_var( "gun_heat",
-                                           0 ) / ( type->gun->overheat_threshold ) * 5.0 ) ) ) {
+                                           0 ) / std::max( type->gun->overheat_threshold * multiplier + modifier, 5.0 ) * 5.0 ) ) ) {
         case 1:
             return "";
         case 2:
@@ -6617,10 +6706,11 @@ std::string item::tname( unsigned int quantity, bool with_prefix, unsigned int t
     Character &player_character = get_player_character();
     std::string tagtext;
     if( is_food() ) {
-        if( has_flag( flag_HIDDEN_POISON ) && player_character.get_skill_level( skill_survival ) >= 3 ) {
+        if( has_flag( flag_HIDDEN_POISON ) &&
+            player_character.get_greater_skill_or_knowledge_level( skill_survival ) >= 3 ) {
             tagtext += _( " (poisonous)" );
         } else if( has_flag( flag_HIDDEN_HALLU ) &&
-                   player_character.get_skill_level( skill_survival ) >= 5 ) {
+                   player_character.get_greater_skill_or_knowledge_level( skill_survival ) >= 5 ) {
             tagtext += _( " (hallucinogenic)" );
         }
     }
@@ -9816,7 +9906,7 @@ bool item::is_emissive() const
 
 bool item::is_deployable() const
 {
-    return type->can_use( "deploy_furn" );
+    return type->can_use( "deploy_furn" ) || type->can_use( "deploy_appliance" );
 }
 
 bool item::is_tool() const
@@ -12168,11 +12258,22 @@ const item_category &item::get_category_shallow() const
 
 const item_category &item::get_category_of_contents() const
 {
-    if( type->category_force == item_category_container && contents_only_one_type() ) {
-        return contents.first_item().get_category_of_contents();
-    } else {
-        return this->get_category_shallow();
+    if( type->category_force == item_category_container ) {
+        const std::list<const item *> items = contents.all_items_top( item_pocket::pocket_type::CONTAINER );
+        if( !items.empty() ) {
+            const item_category &category_of_first_item = items.front()->get_category_of_contents();
+            if( items.size() == 1 ) {
+                return category_of_first_item;
+            }
+            const auto has_same_category = [&category_of_first_item]( const item * i ) {
+                return i->get_category_of_contents() == category_of_first_item;
+            };
+            if( std::all_of( ++items.begin(), items.end(), has_same_category ) ) {
+                return category_of_first_item;
+            }
+        }
     }
+    return this->get_category_shallow();
 }
 
 iteminfo::iteminfo( const std::string &Type, const std::string &Name, const std::string &Fmt,
@@ -13573,8 +13674,19 @@ bool item::process_blackpowder_fouling( Character *carrier )
 bool item::process_gun_cooling( Character *carrier )
 {
     double heat = get_var( "gun_heat", 0 );
-    double threshold = type->gun->overheat_threshold;
-    heat -= type->gun->cooling_value;
+    double overheat_modifier = 0;
+    float overheat_multiplier = 1.0f;
+    double cooling_modifier = 0;
+    float cooling_multiplier = 1.0f;
+    for( const item *mod : gunmods() ) {
+        overheat_modifier += mod->type->gunmod->overheat_threshold_modifier;
+        overheat_multiplier *= mod->type->gunmod->overheat_threshold_multiplier;
+        cooling_modifier += mod->type->gunmod->cooling_value_modifier;
+        cooling_multiplier *= mod->type->gunmod->cooling_value_multiplier;
+    }
+    double threshold = std::max( ( type->gun->overheat_threshold * overheat_multiplier ) +
+                                 overheat_modifier, 5.0 );
+    heat -= std::max( ( type->gun->cooling_value * cooling_multiplier ) + cooling_modifier, 0.5 );
     set_var( "gun_heat", std::max( 0.0, heat ) );
     if( faults.count( fault_overheat_safety ) && heat < threshold * 0.2 ) {
         faults.erase( fault_overheat_safety );

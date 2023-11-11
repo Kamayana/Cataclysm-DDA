@@ -117,7 +117,7 @@ static const bionic_id bio_painkiller( "bio_painkiller" );
 
 static const character_modifier_id character_modifier_obstacle_climb_mod( "obstacle_climb_mod" );
 
-static const climbing_aid_id climbing_aid_default( "default" );
+static const climbing_aid_id climbing_aid_furn_CLIMBABLE( "furn_CLIMBABLE" );
 
 static const efftype_id effect_antibiotic( "antibiotic" );
 static const efftype_id effect_bite( "bite" );
@@ -1518,7 +1518,7 @@ void iexamine::chainfence( Character &you, const tripoint &examp )
         move_cost = 100;
     } else {
         move_cost = you.has_trait( trait_BADKNEES ) ? 800 : 400;
-        if( g->slip_down( game::climb_maneuver::over_obstacle, climbing_aid_default ) ) {
+        if( g->slip_down( game::climb_maneuver::over_obstacle, climbing_aid_furn_CLIMBABLE ) ) {
             you.moves -= move_cost;
             return;
         }
@@ -1575,13 +1575,26 @@ void iexamine::bars( Character &you, const tripoint &examp )
 void iexamine::deployed_furniture( Character &you, const tripoint &pos )
 {
     map &here = get_map();
-    if( !query_yn( _( "Take down the %s?" ), here.furn( pos ).obj().name() ) ) {
-        return;
+
+    tripoint drop_pos = pos;
+
+    if( you.pos().z != pos.z ) {
+        drop_pos = you.pos();
+        if( !you.query_yn( _( "Pull up the %s?" ), here.furn( pos ).obj().name() ) ) {
+            return;
+        }
+        you.add_msg_if_player( m_info, _( "You pull up the %s." ),
+                               here.furn( pos ).obj().name() );
+    } else {
+        if( !you.query_yn( _( "Take down the %s?" ), here.furn( pos ).obj().name() ) ) {
+            return;
+        }
+        you.add_msg_if_player( m_info, _( "You take down the %s." ),
+                               here.furn( pos ).obj().name() );
     }
-    you.add_msg_if_player( m_info, _( "You take down the %s." ),
-                           here.furn( pos ).obj().name() );
+
     const itype_id furn_item = here.furn( pos ).obj().deployed_item;
-    here.add_item_or_charges( pos, item( furn_item, calendar::turn ) );
+    here.add_item_or_charges( drop_pos, item( furn_item, calendar::turn ) );
     here.furn_set( pos, f_null );
 }
 
@@ -2544,6 +2557,11 @@ void iexamine::dirtmound( Character &you, const tripoint &examp )
         return;
     }
     const auto &seed_id = std::get<0>( seed_entries[seed_index] );
+
+    if( !here.has_flag_ter_or_furn( seed_id->seed->required_terrain_flag, examp ) ) {
+        add_msg( _( "This type of seed can not be planted in this location." ) );
+        return;
+    }
 
     plant_seed( you, examp, seed_id );
 }
@@ -4238,6 +4256,7 @@ void trap::examine( const tripoint &examp ) const
 
     if( query_yn( _( "There is a %s there.  Disarm?" ), name() ) ) {
         const float traps_skill_level = player_character.get_skill_level( skill_traps );
+        const float traps_knowledge_level = player_character.get_knowledge_level( skill_traps );
         const float weighted_stat_average = ( 2.0f * player_character.per_cur + 3.0f *
                                               player_character.dex_cur +
                                               player_character.int_cur ) / 6.0f;
@@ -4255,7 +4274,8 @@ void trap::examine( const tripoint &examp ) const
             proficiency_effect += 1;
             // Knowing how to set traps does give you a small bonus to disarming them as well, regardless of your other bonuses.
         }
-        const float mean_roll = traps_skill_level + ( weighted_stat_average / 4.0f ) + proficiency_effect;
+        const float mean_roll = ( ( traps_skill_level + traps_knowledge_level ) / 2 ) +
+                                ( weighted_stat_average / 4.0f ) + proficiency_effect;
 
         int roll = std::round( normal_roll( mean_roll, 3 ) );
 
@@ -5037,6 +5057,7 @@ void iexamine::ledge( Character &you, const tripoint &examp )
         ledge_peek_down = 1,
         ledge_jump_across,
         ledge_fall_down,
+        ledge_examine_furniture_below,
     };
 
     map &here = get_map();
@@ -5045,12 +5066,19 @@ void iexamine::ledge( Character &you, const tripoint &examp )
                           you.posz() );
     bool jump_target_valid = ( here.ter( jump_target ).obj().trap != tr_ledge );
 
+    tripoint just_below = examp;
+    just_below.z--;
+
     uilist cmenu;
     cmenu.text = _( "There is a ledge here.  What do you want to do?" );
 
     // NOTE this menu is merged with the climb down menu, manage keys carefully.
     cmenu.addentry( ledge_peek_down, true, 'p', _( "Peek down." ) );
     g->climb_down_menu_gen( examp, cmenu );
+    if( here.has_flag_furn( "EXAMINE_FROM_ABOVE", just_below ) ) {
+        cmenu.addentry( ledge_examine_furniture_below, true, 'e',
+                        _( "Reach for the %s below." ), here.furn( just_below ).obj().name() );
+    }
     cmenu.addentry( ledge_jump_across, jump_target_valid, 'j',
                     ( jump_target_valid ? _( "Jump across." ) : _( "Can't jump across (need a small gap)." ) ) );
     cmenu.addentry( ledge_fall_down, true, 'f', _( "Fall down." ) );
@@ -5111,6 +5139,11 @@ void iexamine::ledge( Character &you, const tripoint &examp )
 
             g->peek( where );
             you.add_msg_if_player( _( "You peek over the ledge." ) );
+            break;
+        }
+        case ledge_examine_furniture_below: {
+            // Examine the furniture below.
+            here.furn( just_below ).obj().examine( you, just_below );
             break;
         }
         /*case ledge_cling_down: {
@@ -5403,7 +5436,7 @@ void iexamine::autodoc( Character &you, const tripoint &examp )
 
     switch( amenu.ret ) {
         case INSTALL_CBM: {
-            item_location bionic = game_menus::inv::install_bionic( you, patient );
+            item_location bionic = game_menus::inv::install_bionic( you, you, patient );
 
             if( !bionic ) {
                 return;
@@ -5597,16 +5630,16 @@ void iexamine::autodoc( Character &you, const tripoint &examp )
                 if( patient.has_effect( effect_bleed, bp_healed.id() ) ) {
                     patient.remove_effect( effect_bleed, bp_healed );
                     patient.add_msg_player_or_npc( m_good,
-                                                   _( "The Autodoc detected a bleeding on your %s and applied a hemostatic drug to stop it." ),
-                                                   _( "The Autodoc detected a bleeding on <npcname>'s %s and applied a hemostatic drug to stop it." ),
+                                                   _( "The Autodoc detected ongoing blood loss from your %s and administered you hemostatic drugs to stop it." ),
+                                                   _( "The Autodoc detected ongoing blood loss from <npcname>'s %s and administered them hemostatic drugs to stop it." ),
                                                    body_part_name( bp_healed ) );
                 }
 
                 if( patient.has_effect( effect_bite, bp_healed.id() ) ) {
                     patient.remove_effect( effect_bite, bp_healed );
                     patient.add_msg_player_or_npc( m_good,
-                                                   _( "The Autodoc detected an open wound on your %s and applied a disinfectant to clean it." ),
-                                                   _( "The Autodoc detected an open wound on <npcname>'s %s and applied a disinfectant to clean it." ),
+                                                   _( "The Autodoc detected an open wound on your %s and applied disinfectant to sterilize it" ),
+                                                   _( "The Autodoc detected an open wound on <npcname>'s %s and applied disinfectant to sterilize it." ),
                                                    body_part_name( bp_healed ) );
 
                     // Fixed disinfectant intensity of 4 disinfectant_power + 10 first aid skill level of Autodoc.
@@ -5631,8 +5664,8 @@ void iexamine::autodoc( Character &you, const tripoint &examp )
             if( patient.get_rad() ) {
                 if( patient.has_effect( effect_pblue ) ) {
                     patient.add_msg_player_or_npc( m_info,
-                                                   _( "The Autodoc detected an anti-radiation drug in your bloodstream, so it decided not to administer another dose right now." ),
-                                                   _( "The Autodoc detected an anti-radiation drug in <npcname>'s bloodstream, so it decided not to administer another dose right now." ) );
+                                                   _( "The Autodoc detected an anti-radiation drug in your bloodstream, so it decided not to administer you another dose right now." ),
+                                                   _( "The Autodoc detected an anti-radiation drug in <npcname>'s bloodstream, so it decided not to administer them another dose right now." ) );
                 } else {
                     add_msg( m_good,
                              _( "The Autodoc administered an anti-radiation drug to treat radiation poisoning." ) );
@@ -5680,6 +5713,16 @@ static int get_charcoal_charges( units::volume food )
 static bool is_non_rotten_crafting_component( const item &it )
 {
     return is_crafting_component( it ) && !it.rotten();
+}
+
+static int get_milled_amount( const itype_id &milled_id, const tripoint &examp,
+                              map &here )
+{
+    const item_filter valid = [&milled_id]( const item & itm ) {
+        return itm.typeId() == milled_id;
+    };
+    const int num_here = here.items_with( examp, valid ).size();
+    return num_here * milled_id.obj().milling_data->conversion_rate_;
 }
 
 static void mill_activate( Character &you, const tripoint &examp )
@@ -5730,8 +5773,8 @@ static void mill_activate( Character &you, const tripoint &examp )
     for( const item &it : here.i_at( examp ) ) {
         const cata::value_ptr<islot_milling> mdata = it.type->milling_data;
         if( mdata ) {
-            const int charges = it.count() * mdata->conversion_rate_;
-            if( charges <= 0 ) {
+            const int resulting_charges = get_milled_amount( it.typeId(), examp, here );
+            if( resulting_charges <= 0 ) {
                 no_final_product.emplace( it.tname() );
             }
         }
@@ -5898,11 +5941,11 @@ void iexamine::mill_finalize( Character &, const tripoint &examp, const time_poi
         if( it.type->milling_data ) {
             it.calc_rot_while_processing( milling_time );
             const islot_milling &mdata = *it.type->milling_data;
-            const int charges = it.count() * mdata.conversion_rate_;
+            const int resulting_charges = get_milled_amount( it.typeId(), examp, here );
             // if not enough material, just remove the item (0 loops)
             // (may happen if the player did not add enough charges to the mill
             // or if the conversion rate is changed between versions)
-            for( int i = 0; i < charges; i++ ) {
+            for( int i = 0; i < resulting_charges; i++ ) {
                 item result( mdata.into_, start_time + milling_time );
                 result.components.add( it );
                 // copied from item::inherit_flags, which can not be called here because it requires a recipe.
@@ -5911,7 +5954,7 @@ void iexamine::mill_finalize( Character &, const tripoint &examp, const time_poi
                         result.set_flag( f );
                     }
                 }
-                result.recipe_charges = result.charges;
+                result.recipe_charges = resulting_charges;
                 // Set flag to tell set_relative_rot() to calc from bday not now
                 result.set_flag( flag_PROCESSING_RESULT );
                 result.set_relative_rot( it.get_relative_rot() );
@@ -6690,7 +6733,7 @@ void iexamine::workbench_internal( Character &you, const tripoint &examp,
                 }
                 const recipe &rec = selected_craft->get_making();
                 const inventory &inv = you.crafting_inventory();
-                if( !you.has_recipe( &rec, inv, you.get_crafting_helpers() ) ) {
+                if( !you.has_recipe( &rec, inv, you.get_crafting_group() ) ) {
                     you.add_msg_player_or_npc(
                         _( "You don't know the recipe for the %s and can't continue crafting." ),
                         _( "<npcname> doesn't know the recipe for the %s and can't continue crafting." ),

@@ -28,6 +28,7 @@
       "paraclesian_arvore",
       "paraclesian_homullus"
     ],
+    "eoc": [ "scenario_paraclesian_birth" ],
     "traits": [ "ELEMENTAL_MANA1", "ELEMENTAL_MANA2" ],
     "reveal_locale": false
   },
@@ -74,22 +75,8 @@
       "sloc_bikeshop",
       "sloc_petstore"
     ],
-    "professions": [
-      "svictim",
-      "naked",
-      "unemployed",
-      "homeless",
-      "hitchhiker",
-      "patriot",
-      "clown",
-      "lost_sub",
-      "spouse",
-      "musician",
-      "true_foodperson"
-    ],
-    "//": "Needs new eoc for infected with vampirism.  Adjust locations and professions as desired.",
     "eoc": [ "scenario_once_bitten" ],
-    "requirement": "achievement_survive_28_days",
+    "requirement": "avchievement_gains_vampire_trait",
     "flags": [ "CITY_START", "LONE_START" ]
   }
 ]

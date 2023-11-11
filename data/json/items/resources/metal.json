@@ -12,7 +12,7 @@
     "symbol": "/",
     "material": [ "steel" ],
     "qualities": [ [ "HAMMER", 1 ] ],
-    "techniques": [ "WBLOCK_1" ],
+    "techniques": [ "WBLOCK_2", "RAPID", "PRECISE" ],
     "weapon_category": [ "BATONS", "FENCING_WEAPONRY" ],
     "volume": "370 ml",
     "price": "38 USD",
@@ -51,10 +51,11 @@
     "symbol": ";",
     "material": [ "steel" ],
     "volume": "250 ml",
-    "flags": [  ],
+    "flags": [ "ALLOWS_BODY_BLOCK" ],
     "qualities": [ [ "BUTCHER", -42 ] ],
     "price_postapoc": 10,
-    "melee_damage": { "bash": 2, "stab": 6 }
+    "melee_damage": { "bash": 2, "stab": 6 },
+    "weapon_category": [ "SHIVS" ]
   },
   {
     "type": "GENERIC",
@@ -1022,6 +1023,40 @@
     "ammo_type": "components",
     "count": 10,
     "melee_damage": { "bash": 1 }
+  },
+  {
+    "id": "railroad_track_item",
+    "type": "GENERIC",
+    "category": "spare_parts",
+    "name": { "str": "length of railroad track", "str_pl": "lengths of railroad track" },
+    "description": "A heavy one-meter length of railroad track with a smooth top, liberated from a now-defunct rail line.  Far too heavy to be useful for much as-is, but perhaps could be shaped into something with some metalworking skill, or cut down into an anvil if sawed in half first.",
+    "weight": "60000 g",
+    "//0": "Modern railroad tracks are typically around 60kg per meter.",
+    "volume": "10 L",
+    "longest_side": "50 cm",
+    "price": 10000,
+    "price_postapoc": 50,
+    "material": [ "mc_steel" ],
+    "symbol": "=",
+    "color": "light_gray",
+    "qualities": [ [ "ANVIL", 1 ] ]
+  },
+  {
+    "id": "railroad_track_item_half",
+    "type": "GENERIC",
+    "category": "spare_parts",
+    "name": { "str": "half-meter length of railroad track", "str_pl": "half-meter lengths of railroad track" },
+    "description": "A heavy half-meter length of railroad track with a smooth top, liberated from a now-defunct rail line.  Could be used as a makeshift anvil, especially with some modifications, or as spare steel.",
+    "weight": "30000 g",
+    "//0": "Modern railroad tracks are typically around 60kg per meter.",
+    "volume": "5 L",
+    "longest_side": "50 cm",
+    "price": 5000,
+    "price_postapoc": 50,
+    "material": [ "mc_steel" ],
+    "symbol": "=",
+    "color": "light_gray",
+    "qualities": [ [ "ANVIL", 1 ] ]
   },
   {
     "type": "GENERIC",
