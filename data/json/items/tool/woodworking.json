@@ -274,8 +274,7 @@
     "price": "66 USD",
     "name": { "str": "corded electric chainsaw (off)", "str_pl": "corded electric chainsaws (off)" },
     "description": "A treecutting tool moonlighting as a weapon of opportunity.  It has a short electric cord, which you can connect to the generator or your home grid.  Extension cord not included.",
-    "use_action": [ "ELEC_CHAINSAW_OFF", { "type": "link_up", "cable_length": 4, "charge_rate": "2400 W" } ],
-    "pocket_data": [  ]
+    "use_action": [ "ELEC_CHAINSAW_OFF", { "type": "link_up", "cable_length": 4, "charge_rate": "2400 W" } ]
   },
   {
     "id": "elec_chainsaw_cord_on",
