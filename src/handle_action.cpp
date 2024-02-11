@@ -699,16 +699,26 @@ static void grab()
         }
     }
 
-    if( const optional_vpart_position vp = here.veh_at( grabp ) ) {
-        if( !vp->vehicle().handle_potential_theft( you ) ) {
+    if( optional_vpart_position vp = here.veh_at( grabp ) ) {
+        vehicle &veh = vp->vehicle();
+        if( !veh.handle_potential_theft( you ) ) {
             return;
         }
-        if( vp->vehicle().has_tag( flag_CANT_DRAG ) ) {
-            add_msg( m_info, _( "There's nothing to grab there!" ) );
+        if( veh.has_tag( flag_CANT_DRAG ) ) {
+            add_msg( m_info, _( "You can't move that!" ) );
             return;
+        }
+        if( veh.is_powergrid() && veh.part_count() > 1 ) {
+            if( !query_yn(
+                    _( "That's part of a power grid.  Separate it from the grid so you can move it?" ) ) ) {
+                return;
+            }
+            get_player_character().pause();
+            veh.separate_from_grid( vp.value().mount() );
+            vp = here.veh_at( grabp );
         }
         you.grab( object_type::VEHICLE, grabp - you.pos() );
-        add_msg( _( "You grab the %s." ), vp->vehicle().name );
+        add_msg( _( "You grab the %s." ), veh.name );
     } else if( here.has_furn( grabp ) ) { // If not, grab furniture if present
         if( !here.furn( grabp ).obj().is_movable() ) {
             add_msg( _( "You can not grab the %s." ), here.furnname( grabp ) );

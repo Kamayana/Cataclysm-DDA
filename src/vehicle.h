@@ -1017,7 +1017,7 @@ class vehicle
         ret_val<void> can_mount( const point &dp, const vpart_info &vpi ) const;
 
         // @returns true if part \p vp_to_remove can be uninstalled
-        ret_val<void> can_unmount( const vehicle_part &vp_to_remove ) const;
+        ret_val<void> can_unmount( const vehicle_part &vp_to_remove, bool allow_splits = false ) const;
 
         // install a part of type \p type at mount \p dp
         // @return installed part index or -1 if can_mount(...) failed
@@ -1058,7 +1058,8 @@ class vehicle
         bool merge_rackable_vehicle( vehicle *carry_veh, const std::vector<int> &rack_parts );
         // merges vehicles together by copying parts, does not account for any vehicle complexities
         bool merge_vehicle_parts( vehicle *veh );
-        void merge_appliance_into_grid( vehicle &veh_target );
+        bool merge_appliance_into_grid( vehicle &veh_target );
+        void separate_from_grid( point mount );
 
         bool is_powergrid() const;
 
@@ -1859,6 +1860,16 @@ class vehicle
          * @param dst Future vehicle position, used for calculating cable length when shed_cables == trinary::SOME.
          */
         void shed_loose_parts( trinary shed_cables = trinary::NONE, const tripoint_bub_ms *dst = nullptr );
+        /**
+         * Disconnect cables attached to the specified mount point.
+         * @param mount The mount point to detach cables from.
+         * @param remover The character disconnecting the cables.
+         * @param unlink_items If extension cord and device items should be unlinked.
+         * @param unlink_tow_cables If tow cables should be unlinked.
+         * @param unlink_power_cords If power grid cables (power_cord) should be unlinked.
+         */
+        void unlink_cables( const point &mount, Character &remover, bool unlink_items = false,
+                            bool unlink_tow_cables = false, bool unlink_power_cords = false );
 
         /**
          * @name Vehicle turrets

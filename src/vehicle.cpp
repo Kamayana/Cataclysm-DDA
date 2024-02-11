@@ -126,6 +126,8 @@ static const proficiency_id proficiency_prof_driver( "prof_driver" );
 
 static const skill_id skill_swimming( "swimming" );
 
+static const vpart_id vpart_power_cord( "power_cord" );
+
 static const vproto_id vehicle_prototype_none( "none" );
 
 static const zone_type_id zone_type_VEHICLE_PATROL( "VEHICLE_PATROL" );
@@ -133,8 +135,10 @@ static const zone_type_id zone_type_VEHICLE_PATROL( "VEHICLE_PATROL" );
 static const std::string flag_E_COMBUSTION( "E_COMBUSTION" );
 
 static const std::string flag_APPLIANCE( "APPLIANCE" );
-static const std::string flag_CANT_DRAG( "CANT_DRAG" );
 static const std::string flag_WIRING( "WIRING" );
+
+static const translation power_grid_name =
+    to_translation( "name for an array of electronic power grid appliances", "power grid" );
 
 static bool is_sm_tile_outside( const tripoint &real_global_pos );
 static bool is_sm_tile_over_water( const tripoint &real_global_pos );
@@ -1289,7 +1293,7 @@ ret_val<void> vehicle::can_mount( const point &dp, const vpart_info &vpi ) const
     return ret_val<void>::make_success();
 }
 
-ret_val<void> vehicle::can_unmount( const vehicle_part &vp_to_remove ) const
+ret_val<void> vehicle::can_unmount( const vehicle_part &vp_to_remove, bool allow_splits ) const
 {
     const vpart_info &vpi_to_remove = vp_to_remove.info();
     const std::vector<int> parts_here = parts_at_relative( vp_to_remove.mount, false );
@@ -1322,16 +1326,20 @@ ret_val<void> vehicle::can_unmount( const vehicle_part &vp_to_remove ) const
         return ret_val<void>::make_success(); // non-structure parts don't have extra requirements
     }
 
-    // structure parts can only be removed when no non-structure parts are on tile
+    // structure parts can only be removed when no non-structure/non-cable parts are on tile
+    bool cable_here = false;
     for( const int elem : parts_here ) {
         const vehicle_part &vp_here = parts[elem];
-        if( vp_here.info().location != part_location_structure ) {
+        bool vp_is_cable = vp_here.info().has_flag( VPFLAG_POWER_TRANSFER ) ||
+                           vp_here.info().has_flag( "TOW_CABLE" );
+        cable_here = cable_here || vp_is_cable;
+        if( vp_here.info().location != part_location_structure && !vp_is_cable ) {
             return ret_val<void>::make_failure( _( "Remove all other attached parts first." ) );
         }
     }
 
-    // reaching here means only structure parts left on this tile
-    if( parts_here.size() > 1 ) {
+    // reaching here means only structure parts and/or cables left on this tile
+    if( parts_here.size() > 1 && !cable_here ) {
         return ret_val<void>::make_success(); // wrecks can have more than one structure part, so it's valid for removal
     }
 
@@ -1357,7 +1365,7 @@ ret_val<void> vehicle::can_unmount( const vehicle_part &vp_to_remove ) const
         }
     }
 
-    if( adjacent_parts.size() > 1 ) {
+    if( !allow_splits && adjacent_parts.size() > 1 ) {
         // Reaching here means there is more than one adjacent tile, which means it's possible
         // for removal of this part to split the vehicle in two or more disjoint parts, for
         // example removing the middle section of a quad bike. To prevent that we'll run BFS
@@ -1813,9 +1821,24 @@ bool vehicle::merge_rackable_vehicle( vehicle *carry_veh, const std::vector<int>
 
 bool vehicle::merge_vehicle_parts( vehicle *veh )
 {
+    map &here = get_map();
     for( const vehicle_part &part : veh->parts ) {
         if( part.is_fake || part.removed ) {
             continue;
+        }
+        if( part.info().has_flag( VPFLAG_POWER_TRANSFER ) ) {
+            // Disconnect cables that are attached between the merging vehicles.
+            // Delete power cords, drop extension cords on the ground.
+            item drop = veh->part_to_item( part );
+            if( drop.link().t_veh.get() == this ) {
+                if( !veh->magic && part.info().id != vpart_power_cord ) {
+                    const tripoint drop_pos = veh->global_part_pos3( part );
+                    drop.reset_link( false, nullptr, -1, true, drop_pos );
+                    here.add_item_or_charges( drop_pos, drop );
+                }
+                veh->remove_remote_part( part );
+                continue;
+            }
         }
         point part_loc = veh->mount_to_tripoint( part.mount ).xy();
 
@@ -1827,22 +1850,34 @@ bool vehicle::merge_vehicle_parts( vehicle *veh )
         refresh();
     }
 
-    map &here = get_map();
     here.destroy_vehicle( veh );
 
     return true;
 }
 
-void vehicle::merge_appliance_into_grid( vehicle &veh_target )
+bool vehicle::merge_appliance_into_grid( vehicle &veh_target )
 {
     if( &veh_target == this ) {
-        return;
+        return false;
+    }
+    // Release grab if player is dragging either appliance
+    if( get_avatar().get_grab_type() == object_type::VEHICLE ) {
+        const tripoint grab_point = get_avatar().pos() + get_avatar().grab_point;
+        const optional_vpart_position grabbed_veh = get_map().veh_at( grab_point );
+        if( grabbed_veh && ( &grabbed_veh->vehicle() == this || &grabbed_veh->vehicle() == &veh_target ) ) {
+            add_msg( _( "You release the %s." ), grabbed_veh->vehicle().name );
+            get_avatar().grab( object_type::NONE );
+        }
     }
     //Reset both grid turn_dir to prevent rotation on merge
     turn_dir = 0_degrees;
     veh_target.turn_dir = 0_degrees;
 
-    veh_target.shift_parts( get_map(), veh_target.pivot_displacement() );
+    // Ensure both vehicles have the correct position and a part at 0,0. get_bounding_box will update precalcs.
+    shift_if_needed( get_map() );
+    pos -= pivot_anchor[0];
+    veh_target.shift_if_needed( get_map() );
+    veh_target.pos -= veh_target.pivot_anchor[0];
 
     bounding_box vehicle_box = get_bounding_box( true, true );
     point size;
@@ -1860,18 +1895,52 @@ void vehicle::merge_appliance_into_grid( vehicle &veh_target )
         if( !merge_vehicle_parts( &veh_target ) ) {
             debugmsg( "failed to merge vehicle parts" );
         } else {
-            //The grid needs to stay undraggable
-            add_tag( flag_CANT_DRAG );
-
             //Keep wall wiring sections from losing their flag
             //A grid with only wires needs this flag to count as a powergrid
             //But it's not a problem if a grid without any has this flag, thus we can add it without issue
             add_tag( flag_WIRING );
-            name = _( "power grid" );
+            name = power_grid_name.translated();
+            return true;
         }
     } else {
         add_msg( m_bad, _( "Can't merge into %s, the resulting grid would be too big." ), veh_target.name );
     }
+    return false;
+}
+
+void vehicle::separate_from_grid( const point mount )
+{
+    // Disconnect items and power cords
+    unlink_cables( mount, get_player_character(), true, true, true );
+    part_removal_cleanup();
+    if( part_count() <= 1 ) {
+        // No need to split the power grid up.
+        return;
+    }
+
+    // Split the target part away from the power grid.
+    const int idx = part_displayed_at( mount, true );
+    if( idx == -1 ) {
+        debugmsg( "no part at mount point %s", mount.to_string() );
+        return;
+    }
+    map &here = get_map();
+    const std::string part_name = part( idx ).name();
+    std::vector<std::vector<int>> split_indices( { { idx } } );
+    const std::vector<vehicle *> null_vehicles( 2, nullptr );
+    const std::vector<std::vector<point>> null_mounts( 2, std::vector<point>() );
+    if( !split_vehicles( here, split_indices, null_vehicles, null_mounts ) ) {
+        debugmsg( "unable to split %s from power grid", part( idx ).name( false ) );
+        return;
+    }
+
+    // Split again if removing the target part separated the power grid into multiple sections.
+    find_and_split_vehicles( here, {} );
+
+    add_msg( _( "You separate the %s from the power grid" ), part_name );
+
+    part_removal_cleanup();
+    here.rebuild_vehicle_level_caches();
 }
 
 bool vehicle::is_powergrid() const
@@ -2070,6 +2139,15 @@ void vehicle::part_removal_cleanup()
         }
     }
     shift_if_needed( here );
+    if( is_powergrid() ) {
+        // Ensure the grid has the correct position and a part at 0,0.
+        pos -= pivot_anchor[0];
+        precalc_mounts( 0, turn_dir, point() );
+        if( name == power_grid_name.translated() && part_count() == 1 ) {
+            // If we've split away all of a power grid's parts, rename it from "power grid" to its part name.
+            name = parts[0].info().name();
+        }
+    }
     refresh( false ); // Rebuild cached indices
     coeff_air_dirty = coeff_air_changed;
     coeff_air_changed = false;
@@ -2198,7 +2276,7 @@ bool vehicle::find_and_split_vehicles( map &here, std::set<int> exclude )
     std::vector<int> valid_parts = all_parts_at_location( part_location_structure );
     std::set<int> checked_parts = std::move( exclude );
 
-    std::vector<std::vector <int>> all_vehicles;
+    std::vector<std::vector <int>> split_off_vehicles;
 
     for( size_t cnt = 0; cnt < 4; cnt++ ) {
         int test_part = -1;
@@ -2260,15 +2338,16 @@ bool vehicle::find_and_split_vehicles( map &here, std::set<int> exclude )
         }
         // don't include the first vehicle's worth of parts
         if( cnt > 0 ) {
-            all_vehicles.push_back( veh_parts );
+            split_off_vehicles.push_back( veh_parts );
         }
     }
 
-    if( !all_vehicles.empty() ) {
-        const std::vector<vehicle *> null_vehicles( all_vehicles.size(), nullptr );
-        const std::vector<std::vector<point>> null_mounts( all_vehicles.size(), std::vector<point>() );
+    if( !split_off_vehicles.empty() ) {
+        const std::vector<vehicle *> null_vehicles( split_off_vehicles.size(), nullptr );
+        const std::vector<std::vector<point>> null_mounts( split_off_vehicles.size(),
+                                           std::vector<point>() );
         std::vector<vehicle *> mark_wreckage { this };
-        if( split_vehicles( here, all_vehicles, null_vehicles, null_mounts, &mark_wreckage ) ) {
+        if( split_vehicles( here, split_off_vehicles, null_vehicles, null_mounts, &mark_wreckage ) ) {
             for( vehicle *veh : mark_wreckage ) {
                 if( !veh->has_tag( flag_APPLIANCE ) ) { // Appliances don't turn into wrecks when split
                     veh->add_tag( "wreckage" ); // wreckages don't get fake parts added
@@ -2300,6 +2379,7 @@ bool vehicle::split_vehicles( map &here,
                               std::vector<vehicle *> *added_vehicles )
 {
     bool did_split = false;
+    bool from_powergrid = is_powergrid();
     size_t i = 0;
     for( i = 0; i < new_vehs.size(); i ++ ) {
         std::vector<int> split_parts = new_vehs[ i ];
@@ -2344,7 +2424,9 @@ bool vehicle::split_vehicles( map &here,
             if( added_vehicles != nullptr ) {
                 added_vehicles->emplace_back( new_vehicle );
             }
-            new_vehicle->name = name;
+            // If we've split a power grid down to one part, rename it from "power grid" to its part name.
+            new_vehicle->name = from_powergrid && split_parts.size() == 1 ?
+                                parts[ split_part0 ].info().name() : name;
             new_vehicle->owner = owner;
             new_vehicle->old_owner = old_owner;
             new_vehicle->move = move;
@@ -6930,6 +7012,48 @@ void vehicle::shed_loose_parts( const trinary shed_cables, const tripoint_bub_ms
             remove_remote_part( vp_loose );
         }
         remove_part( vp_loose );
+    }
+}
+
+void vehicle::unlink_cables( const point &mount, Character &remover,
+                             bool unlink_items, bool unlink_tow_cables, bool unlink_power_cords )
+{
+    if( !unlink_items && !unlink_tow_cables && !unlink_power_cords ) {
+        return;
+    }
+    for( const int index : parts_at_relative( mount, true, false ) ) {
+        vehicle_part &part = parts[ index ];
+
+        if( unlink_items && part.has_flag( vp_flag::linked_flag ) ) {
+            part.remove_flag( vp_flag::linked_flag );
+            part.last_disconnected = calendar::turn;
+            linked_item_epower_this_turn = 0_W;
+            remover.add_msg_if_player( _( "You detach items connected to the %s." ), part.name( false ) );
+        }
+        if( unlink_tow_cables && part.info().has_flag( "TOW_CABLE" ) ) {
+            bool u_can_stash_tow = remover.can_stash( part.get_base() );
+            invalidate_towing( true, &remover );
+            if( u_can_stash_tow ) {
+                remover.add_msg_if_player( _( "You detach the %s and take it." ), part.name( false ) );
+            } else {
+                remover.add_msg_if_player( _( "You detach the %s and drop it." ), part.name( false ) );
+            }
+        }
+        if( unlink_power_cords && part.info().has_flag( VPFLAG_POWER_TRANSFER ) ) {
+            item drop = part_to_item( part );
+            bool u_can_stash = remover.can_stash( drop );
+            if( !magic && !drop.has_flag( flag_NO_DROP ) && remover.i_add_or_drop( drop ) ) {
+                if( u_can_stash ) {
+                    remover.add_msg_if_player( _( "You detach the %s and take it." ), drop.type_name() );
+                } else {
+                    remover.add_msg_if_player( _( "You detach the %s and drop it." ), drop.type_name() );
+                }
+            } else {
+                remover.add_msg_if_player( _( "You detached the %s." ), drop.type_name() );
+            }
+            remove_remote_part( part );
+            remove_part( part );
+        }
     }
 }
 

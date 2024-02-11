@@ -83,7 +83,7 @@ void place_appliance( const tripoint &p, const vpart_id &vpart, const std::optio
         veh->add_tag( flag_WIRING );
     }
 
-    if( veh->is_powergrid() || vpinfo.has_flag( flag_WALL_MOUNTED ) ) {
+    if( vpinfo.has_flag( flag_WALL_MOUNTED ) ) {
         veh->add_tag( flag_CANT_DRAG );
     }
 
@@ -100,8 +100,9 @@ void place_appliance( const tripoint &p, const vpart_id &vpart, const std::optio
         }
         vehicle &veh_target = vp->vehicle();
         if( veh_target.has_tag( flag_APPLIANCE ) ) {
-            if( veh->is_powergrid() && veh_target.is_powergrid() ) {
-                veh->merge_appliance_into_grid( veh_target );
+            if( veh->is_powergrid() && veh_target.is_powergrid() &&
+                veh->merge_appliance_into_grid( veh_target ) ) {
+                add_msg( m_info, _( "You merge it into the adjacent power grid." ) );
                 continue;
             }
             if( connected_vehicles.find( &veh_target ) == connected_vehicles.end() ) {
@@ -148,6 +149,7 @@ veh_app_interact::veh_app_interact( vehicle &veh, const point &p )
     ctxt.register_action( "RENAME" );
     ctxt.register_action( "REMOVE" );
     ctxt.register_action( "MERGE" );
+    ctxt.register_action( "DISCONNECT_FROM_GRID" );
 }
 
 // @returns true if a battery part exists on any vehicle connected to veh
@@ -325,11 +327,6 @@ bool veh_app_interact::can_siphon()
     return false;
 }
 
-bool veh_app_interact::can_merge()
-{
-    return veh->is_powergrid();
-}
-
 // Helper function for selecting a part in the parts list.
 // If only one part is available, don't prompt the player.
 static vehicle_part *pick_part( const std::vector<vehicle_part *> &parts,
@@ -463,9 +460,17 @@ void veh_app_interact::rename()
 
 void veh_app_interact::remove()
 {
-    int const part = veh->part_at( a_point );
-    vehicle_part &vp = veh->part( part >= 0 ? part : 0 );
-    const vpart_info &vpinfo = vp.info();
+    map &here = get_map();
+    const tripoint a_point_bub( veh->mount_to_tripoint( a_point ) );
+
+    vehicle_part *vp;
+    if( auto sel_part = here.veh_at( a_point_bub ).part_with_feature( VPFLAG_APPLIANCE, false ) ) {
+        vp = &sel_part->part();
+    } else {
+        int const part = veh->part_at( veh->coord_translate( a_point ) );
+        vp = &veh->part( part >= 0 ? part : 0 );
+    }
+    const vpart_info &vpinfo = vp->info();
     const requirement_data reqs = vpinfo.removal_requirements();
     Character &you = get_player_character();
     const inventory &inv = you.crafting_inventory();
@@ -488,24 +493,40 @@ void veh_app_interact::remove()
     } else if( query_yn( _( "Are you sure you want to take down the %s?" ), veh->name ) ) {
         act = player_activity( ACT_VEHICLE, to_moves<int>( time ), static_cast<int>( 'O' ) );
         act.str_values.push_back( vpinfo.id.str() );
-        const point q = veh->coord_translate( vp.mount );
-        map &here = get_map();
         for( const tripoint &p : veh->get_points( true ) ) {
             act.coord_set.insert( here.getabs( p ) );
         }
-        act.values.push_back( here.getabs( veh->global_pos3() ).x + q.x );
-        act.values.push_back( here.getabs( veh->global_pos3() ).y + q.y );
+        const tripoint a_point_abs( here.getabs( a_point_bub ) );
+        act.values.push_back( a_point_abs.x );
+        act.values.push_back( a_point_abs.y );
         act.values.push_back( a_point.x );
         act.values.push_back( a_point.y );
         act.values.push_back( -a_point.x );
         act.values.push_back( -a_point.y );
-        act.values.push_back( veh->index_of_part( &vp ) );
+        act.values.push_back( veh->index_of_part( vp ) );
     }
+}
+
+bool veh_app_interact::can_disconnect()
+{
+    for( int &i : veh->parts_at_relative( a_point, true ) ) {
+        if( veh->part( i ).has_flag( vp_flag::linked_flag ) ||
+            veh->part( i ).info().has_flag( "TOW_CABLE" ) ) {
+            return false;
+        }
+    }
+    return true;
+}
+
+void veh_app_interact::disconnect()
+{
+    veh->separate_from_grid( a_point );
+    get_player_character().pause();
 }
 
 void veh_app_interact::plug()
 {
-    const int part = veh->part_at( a_point );
+    const int part = veh->part_at( veh->coord_translate( a_point ) );
     const tripoint pos = veh->global_part_pos3( part );
     item cord( "power_cord" );
     cord.link_to( *veh, a_point, link_state::automatic );
@@ -514,46 +535,17 @@ void veh_app_interact::plug()
     }
 }
 
-void veh_app_interact::merge()
-{
-    map &here = get_map();
-
-    const int part = veh->part_at( a_point );
-    const tripoint app_pos = veh->global_part_pos3( part );
-
-    const std::function<bool( const tripoint & )> f = [&here, app_pos]( const tripoint & pnt ) {
-        if( pnt == app_pos ) {
-            return false;
-        }
-        const optional_vpart_position target_vp = here.veh_at( pnt );
-        if( !target_vp ) {
-            return false;
-        }
-        vehicle &target_veh = target_vp->vehicle();
-        if( !target_veh.is_powergrid() ) {
-            return false;
-        }
-        return true;
-    };
-
-    const std::optional<tripoint> target_pos = choose_adjacent_highlight( app_pos,
-            _( "Merge the appliance into which grid?" ), _( "Target must be adjacent." ), f, false, false );
-    if( !target_pos ) {
-        return;
-    }
-    const optional_vpart_position target_vp = here.veh_at( *target_pos );
-    if( !target_vp ) {
-        return;
-    }
-    vehicle &target_veh = target_vp->vehicle();
-    veh->merge_appliance_into_grid( target_veh );
-}
-
 void veh_app_interact::populate_app_actions()
 {
-
-    int const part = veh->part_at( a_point );
-    const vehicle_part &vp = veh->part( part >= 0 ? part : 0 );
+    map &here = get_map();
+    vehicle_part *vp;
+    const tripoint a_point_bub( veh->mount_to_tripoint( a_point ) );
+    if( auto sel_part = here.veh_at( a_point_bub ).part_with_feature( VPFLAG_APPLIANCE, false ) ) {
+        vp = &sel_part->part();
+    } else {
+        const int part = veh->part_at( veh->coord_translate( a_point ) );
+        vp = &veh->part( part >= 0 ? part : 0 );
+    }
 
     const std::string ctxt_letters = ctxt.get_available_single_char_hotkeys();
     imenu.entries.clear();
@@ -582,21 +574,27 @@ void veh_app_interact::populate_app_actions()
     app_actions.emplace_back( [this]() {
         remove();
     } );
-    imenu.addentry( -1, veh->can_unmount( vp ).success(), ctxt.keys_bound_to( "REMOVE" ).front(),
+    imenu.addentry( -1, veh->can_unmount( *vp, true ).success(), ctxt.keys_bound_to( "REMOVE" ).front(),
                     ctxt.get_action_name( "REMOVE" ) );
     // Plug
     app_actions.emplace_back( [this]() {
         plug();
     } );
     imenu.addentry( -1, true, ctxt.keys_bound_to( "PLUG" ).front(),
-                    ctxt.get_action_name( "PLUG" ) );
+                    string_format( "%s%s", ctxt.get_action_name( "PLUG" ),
+                                   //~ An addition to the description if the appliance is a power grid.
+                                   veh->is_powergrid() ? _( " / merge power grid" ) : "" ) );
 
-    // Merge
-    app_actions.emplace_back( [this]() {
-        merge();
-    } );
-    imenu.addentry( -1, can_merge(), ctxt.keys_bound_to( "MERGE" ).front(),
-                    ctxt.get_action_name( "MERGE" ) );
+    if( veh->is_powergrid() && veh->part_count() > 1 ) {
+        // Disconnect from power grid
+        app_actions.emplace_back( [this]() {
+            disconnect();
+            veh = nullptr;
+        } );
+        const bool can_disc = can_disconnect();
+        imenu.addentry_desc( -1, can_disc, ctxt.keys_bound_to( "DISCONNECT_GRID" ).front(),
+                             ctxt.get_action_name( "DISCONNECT_GRID" ), can_disc ? "" : _( "Remove other cables first" ) );
+    }
 
     /*************** Get part-specific actions ***************/
     veh_menu menu( veh, "IF YOU SEE THIS IT IS A BUG" );
@@ -650,7 +648,7 @@ void veh_app_interact::app_loop()
             app_actions[ret]();
         }
         // Player activity queued up, close interaction menu
-        if( !act.is_null() || !get_player_character().activity.is_null() ) {
+        if( veh == nullptr || !act.is_null() || !get_player_character().activity.is_null() ) {
             done = true;
         }
     }

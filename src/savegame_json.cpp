@@ -3430,6 +3430,11 @@ void vehicle::deserialize( const JsonObject &data )
 
     refresh();
 
+    // Remove after 0.I
+    if( has_tag( "CANT_DRAG" ) && is_powergrid() && !has_part( "WALL_MOUNTED" ) ) {
+        tags.erase( "CANT_DRAG" );
+    }
+
     point p;
     zone_data zd;
     for( JsonObject sdata : data.get_array( "zones" ) ) {
