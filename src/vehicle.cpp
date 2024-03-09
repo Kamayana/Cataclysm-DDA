@@ -3125,7 +3125,7 @@ std::vector<std::vector<int>> vehicle::find_lines_of_parts(
 int vehicle::part_at( const point &dp ) const
 {
     for( const vpart_reference &vp : get_all_parts() ) {
-        if( vp.part().precalc[0].xy() == dp && !vp.part().removed ) {
+        if( vp.part().mount == dp && !vp.part().removed ) {
             return static_cast<int>( vp.part_index() );
         }
     }
