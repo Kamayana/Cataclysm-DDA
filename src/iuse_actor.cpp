@@ -4862,8 +4862,7 @@ std::optional<int> link_up_actor::link_to_veh_app( Character *p, item &it,
             // If both vehicles are adjacent power grids, try to merge them together first.
             const point prev_pos = here.bub_from_abs( it.link().t_veh->coord_translate( it.link().t_mount ) +
                                    it.link().t_abs_pos ).xy().raw();
-            const float adjacent_distance = 1.5f;
-            if( selection.xy().distance( prev_pos ) <= adjacent_distance &&
+            if( selection.xy().distance_manhattan( prev_pos ) <= 1 &&
                 it.link().t_veh->merge_appliance_into_grid( sel_vp->vehicle() ) ) {
                 p->add_msg_if_player( m_info, _( "You merge the two power grids." ) );
                 return 1;

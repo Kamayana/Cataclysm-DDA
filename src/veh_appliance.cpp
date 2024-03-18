@@ -91,24 +91,32 @@ void place_appliance( const tripoint &p, const vpart_id &vpart, const std::optio
     // or the appliance will be invisible for the first couple of turns.
     here.add_vehicle_to_cache( veh );
 
-    // Connect to any neighbouring appliances or wires once
+    // Power grids need to merge with orthogonally adjacent power grids first
     std::unordered_set<const vehicle *> connected_vehicles;
+    if( veh->is_powergrid() ) {
+        for( const point &offset : four_adjacent_offsets ) {
+            const optional_vpart_position vp = here.veh_at( p + offset );
+            if( !vp ) {
+                continue;
+            }
+            vehicle &veh_target = vp->vehicle();
+            if( veh_target.is_powergrid() && veh->merge_appliance_into_grid( veh_target ) ) {
+                add_msg( m_info, _( "You merge it into the adjacent power grid." ) );
+            }
+        }
+    }
+
+    // Connect to any neighbouring appliances or wires once
     for( const tripoint &trip : here.points_in_radius( p, 1 ) ) {
         const optional_vpart_position vp = here.veh_at( trip );
         if( !vp ) {
             continue;
         }
         vehicle &veh_target = vp->vehicle();
-        if( veh_target.has_tag( flag_APPLIANCE ) ) {
-            if( veh->is_powergrid() && veh_target.is_powergrid() &&
-                veh->merge_appliance_into_grid( veh_target ) ) {
-                add_msg( m_info, _( "You merge it into the adjacent power grid." ) );
-                continue;
-            }
-            if( connected_vehicles.find( &veh_target ) == connected_vehicles.end() ) {
-                veh->connect( p, trip );
-                connected_vehicles.insert( &veh_target );
-            }
+        if( &veh_target != veh && veh_target.has_tag( flag_APPLIANCE ) &&
+            connected_vehicles.find( &veh_target ) == connected_vehicles.end() ) {
+            veh->connect( p, trip );
+            connected_vehicles.insert( &veh_target );
         }
     }
 
