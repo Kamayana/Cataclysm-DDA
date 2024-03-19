@@ -107,6 +107,7 @@ void place_appliance( const tripoint &p, const vpart_id &vpart, const std::optio
     }
 
     // Connect to any neighbouring appliances or wires once
+    const optional_vpart_position veh_vp = here.veh_at( p );
     for( const tripoint &trip : here.points_in_radius( p, 1 ) ) {
         const optional_vpart_position vp = here.veh_at( trip );
         if( !vp ) {
@@ -115,7 +116,11 @@ void place_appliance( const tripoint &p, const vpart_id &vpart, const std::optio
         vehicle &veh_target = vp->vehicle();
         if( &veh_target != veh && veh_target.has_tag( flag_APPLIANCE ) &&
             connected_vehicles.find( &veh_target ) == connected_vehicles.end() ) {
-            veh->connect( p, trip );
+            item cord( "power_cord" );
+            if( !cord.link_to( veh_vp, vp, link_state::vehicle_port ).success() ) {
+                debugmsg( "Failed to connect the %s, it tried to make an invalid connection!", cord.tname() );
+                continue;
+            }
             connected_vehicles.insert( &veh_target );
         }
     }

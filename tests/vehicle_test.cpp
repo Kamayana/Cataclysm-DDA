@@ -421,7 +421,7 @@ TEST_CASE( "Check_folded_item_damage_transfers_to_parts_and_vice_versa", "[item]
     }
 }
 
-// Basically a copy of vehicle::connect() that uses an arbitrary cord type
+// Connect a cord between two vehicles
 static void connect_power_line( const tripoint &src_pos, const tripoint &dst_pos,
                                 const itype_id &itm )
 {

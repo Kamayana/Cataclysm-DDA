@@ -994,8 +994,6 @@ class vehicle
         // Stop any kind of automatic vehicle control and apply the brakes.
         void stop_autodriving( bool apply_brakes = true );
 
-        void connect( const tripoint &source_pos, const tripoint &target_pos );
-
         bool precollision_check( units::angle &angle, map &here, bool follow_protocol );
         // Try select any fuel for engine, returns true if some fuel is available
         bool auto_select_fuel( vehicle_part &vp );

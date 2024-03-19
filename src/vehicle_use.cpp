@@ -547,25 +547,6 @@ void vehicle::toggle_tracking()
     }
 }
 
-void vehicle::connect( const tripoint &source_pos, const tripoint &target_pos )
-{
-    map &here = get_map();
-    const optional_vpart_position sel_vp = here.veh_at( target_pos );
-    const optional_vpart_position prev_vp = here.veh_at( source_pos );
-
-    if( !sel_vp ) {
-        return;
-    }
-    if( &sel_vp->vehicle() == &prev_vp->vehicle() ) {
-        return ;
-    }
-
-    item cord( "power_cord" );
-    if( !cord.link_to( prev_vp, sel_vp, link_state::vehicle_port ).success() ) {
-        debugmsg( "Failed to connect the %s, it tried to make an invalid connection!", cord.tname() );
-    }
-}
-
 double vehicle::engine_cold_factor( const vehicle_part &vp ) const
 {
     if( !vp.info().has_flag( "E_COLD_START" ) ) {
