@@ -13456,7 +13456,7 @@ ret_val<void> item::link_to( vehicle &veh, const point &mount, link_state link_t
         reset_link();
     }
     //~ %1$s - first vehicle name, %2$s - second vehicle name - %3$s - cable name,
-    return ret_val<void>::make_success( _( "You connect the %1$s and %2$s with the %3$s." ),
+    return ret_val<void>::make_success( _( "You connect %1$s and %2$s with the %3$s." ),
                                         prev_veh->disp_name(), veh.disp_name(), type_name() );
 }
 
